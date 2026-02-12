@@ -174,10 +174,10 @@
                 columnName,
                 textbox.value,
                 function () {
-                // alert('Saved OK');
+
                 },
                 function (error) {
-                 //   aler("Error:" + error.get_message());
+
                 }
             );
         }
@@ -195,6 +195,27 @@
             PageMethods.SaveCell(0, "Col1", "Test",
                 function () { alert("Success"); },
                 function (err) { alert(err.get_message()); }
+            );
+        }
+
+        function saveHeader(textbox) {
+
+            var wrapper = textbox.closest(".cell-wrapper");
+            var lbl = textbox.previousElementSibling;
+
+            lbl.innerText = textbox.value;
+            textbox.style.display = "none";
+            lbl.style.display = "inline";
+
+            var colIndex = wrapper.getAttribute("data-headercol");
+            var level = wrapper.getAttribute("data-headerlevel");
+
+            PageMethods.SaveHeader(
+                parseInt(colIndex),
+                parseInt(level),
+                textbox.value,
+                function () { },
+                function (err) { console.log(err.get_message()); }
             );
         }
 </script>
@@ -237,9 +258,10 @@
                                     <td style="width: 60%;align-items:flex-start" >
                                     <asp:Button ID="Button2" runat="server" Text="Button" />
                                      <br />
+                                                                             <br />
                                         <div style="display: flex;flex-direction: row; justify-content:flex-start">
 
-                                        <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated">
+                                        <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated" Font-Size="12px">
                                             <AlternatingRowStyle BackColor="White" />
                                             <Columns>
                                                 <asp:BoundField DataField="MemberName" />
