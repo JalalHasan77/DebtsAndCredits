@@ -34,7 +34,7 @@ Partial Class NewOrder
     <WebMethod()>
     <ScriptMethod()>
     Public Shared Sub SaveCell(rowIndex As Integer, columnName As String, value As String)
-        MsgBox("")
+        'MsgBox("")
         Dim dt As DataTable =
         CType(HttpContext.Current.Session("MyTable"), DataTable)
 
@@ -168,7 +168,7 @@ Partial Class NewOrder
 
     End Sub
     Protected Sub hfRowIndex_ValueChanged(sender As Object, e As EventArgs) Handles hfRowIndex.ValueChanged
-        MsgBox(hfRowIndex.Value)
+        'MsgBox(hfRowIndex.Value)
     End Sub
 End Class
 
@@ -183,22 +183,15 @@ Public Class EditableTemplate
     End Sub
 
     Public Sub InstantiateIn(container As Control) Implements ITemplate.InstantiateIn
+
         Dim wrapper As New HtmlGenericControl("div")
         wrapper.Attributes("class") = "cell-wrapper"
         wrapper.Attributes("onclick") = "editCell(this)"
         wrapper.Attributes("data-column") = _columnName
 
-        ' LABEL
         Dim lbl As New Label()
         lbl.ID = "lblValue"
 
-        AddHandler wrapper.DataBinding, Sub(sender As Object, e As EventArgs)
-                                            Dim w = CType(sender, HtmlGenericControl)
-                                            Dim row = CType(w.NamingContainer, GridViewRow)
-                                            w.Attributes("data-rowindex") = row.RowIndex.ToString()
-                                        End Sub
-
-        ' TEXTBOX
         Dim txt As New TextBox()
         txt.ID = "txtValue"
         txt.Style("display") = "none"
@@ -206,11 +199,21 @@ Public Class EditableTemplate
         txt.Attributes("onblur") = "saveCell(this)"
         txt.Attributes("onkeydown") = "return handleEnter(event, this);"
 
-        AddHandler txt.DataBinding, Sub(sender As Object, e As EventArgs)
-                                        Dim t = CType(sender, TextBox)
-                                        Dim row = CType(t.NamingContainer, GridViewRow)
-                                        t.Text = Convert.ToString(DataBinder.Eval(row.DataItem, _columnName))
-                                    End Sub
+        ' ✅ Bind EVERYTHING in ONE place
+        AddHandler wrapper.DataBinding, Sub(sender As Object, e As EventArgs)
+
+                                            Dim w = CType(sender, HtmlGenericControl)
+                                            Dim row = CType(w.NamingContainer, GridViewRow)
+
+                                            Dim valueObj = DataBinder.Eval(row.DataItem, _columnName)
+                                            Dim value As String = If(valueObj Is DBNull.Value, "", valueObj.ToString())
+
+                                            lbl.Text = value
+                                            txt.Text = value
+
+                                            w.Attributes("data-rowindex") = row.RowIndex.ToString()
+
+                                        End Sub
 
         wrapper.Controls.Add(lbl)
         wrapper.Controls.Add(txt)
