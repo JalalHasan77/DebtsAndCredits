@@ -1,0 +1,189 @@
+﻿
+#form input[type="text"] {
+    border: 41px solid #FFFFFF;
+    font-size: 16px;
+    height:30px;
+    padding: 15px;width: 100%;
+}
+
+#form TextBox {
+    border: 51px solid #FFFFFF;
+    font-size: 16px;
+    padding: 5px;
+    width: 100%;
+}
+
+#form input[type="password"] {
+    border: 1px solid #FFFFFF;
+    font-size: 16px;
+    padding: 5px;
+    width: 100%;
+}
+#form input[type="button"] {
+    border: 0px;
+}
+
+.MeBoxPadd {
+    border: 0px solid  ;
+    font-size: 14px;
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+	margin-bottom: 0px;
+}
+
+.MeBox {
+    border: 1px solid  #CCCCCC;
+    font-size: 14px;
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 6px;
+	margin-bottom: 0px;
+    direction: ltr;
+}
+
+.MeBoxDate {
+    border: 1px solid  #CCCCCC;
+    font-size: 14px;
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 6px;
+	margin-bottom: 0px;
+}
+
+.MeBox:hover {
+    border: 1px solid  #399BFF;
+    font-size: 14px;
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 6px;
+}
+
+.MeBox:active {
+    border: 1px solid  #399BFF;
+    font-size: 14px;
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 6px;
+}
+
+
+.MeForm input[type="button"]
+{
+    border: 1px solid  #CCCCCC;
+    font-size: 14px;
+    padding: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 3px;
+	margin-bottom: 0px;
+}
+
+.MeForm input[type="text"] {
+    border: 1px solid  #CCCCCC;
+    font-size: 14px;
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 3px;
+	margin-bottom: 0px;
+}
+
+.MeForm input[type="select"] {
+    border: 1px solid  #CCCCCC;
+    font-size: 14px;
+    padding: 8px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 3px;
+	margin-bottom: 0px;
+}
+
+.MeForm input[type="submit"]
+{
+    border: 1px solid  #CCCCCC;
+    font-size: 14px;
+    padding: 6px;
+    box-sizing: border-box;
+    border-radius: 3px;
+    width: 72px;
+}
+
+.styled-select select {
+    background: transparent;
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    line-height: 1;
+    border: 0;
+    border-radius: 0;
+    height: 34px;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    }
+
+.FormHeader
+{ 
+  background-color:#DFF4FF;
+  /*background-color:#f9e4fb;*/
+  padding:6px 6px 6px 6px;
+  font-family: Arial;
+  font-size: 20px;
+  color: #333333;
+}
+
+.FormBody  {
+    margin: 0px;
+    background-color:#DFF4FF;
+    font-size: 14px; 
+    font-family: arial;
+    /*background-color:#f9e4fb;*/
+}
+
+.MeBoxButton {
+    border: 1px solid  #CCCCCC;
+    font-size: 14px;
+    padding: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 5px;
+}
+
+
+.MeBoxButton:hover {
+    border: 1px solid  #399BFF;
+    font-size: 14px;
+    padding: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 6px;
+}
+
+.MeBoxButton:active {
+    border: 1px solid  #399BFF;
+    font-size: 14px;
+    padding: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 5px;
+}
+
+
+.img_shake:hover {
+    animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;      }
+
+    @keyframes shake {  
+        10%, 90% {    transform: translate3d(-1px, 0, 0); }
+        20%, 80% {    transform: translate3d(2px, 0, 0);  }
+        30%, 50%, 70% {   transform: translate3d(-4px, 0, 0);  }
+        40%, 60% {    transform: translate3d(4px, 0, 0); }
+    }
+
+
