@@ -146,37 +146,59 @@ Partial Class NewOrder
     End Sub
 
     Protected Sub GridView1_RowCreated(sender As Object, e As GridViewRowEventArgs)
+
         If e.Row.RowType = DataControlRowType.Header Then
 
             e.Row.Cells.Clear()
             Dim table As Table = CType(GridView1.Controls(0), Table)
 
-            ' ===== Level 1 =====
+            Dim colCount As Integer = GridView1.Columns.Count
+
+            ' --- FIRST HEADER ROW ---
             Dim h1 As New GridViewRow(0, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
-            For i As Integer = 0 To GridView1.Columns.Count - 1
-                h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i), i, 1))
+            For i As Integer = 0 To colCount - 1
+
+                If i = 0 Then
+                    ' First column: single normal header
+                    Dim cell As New TableCell()
+                    cell.Text = "Member"
+                    cell.RowSpan = 3   ' Span all header levels
+                    cell.HorizontalAlign = HorizontalAlign.Center
+                    cell.VerticalAlign = VerticalAlign.Middle
+                    h1.Cells.Add(cell)
+                Else
+                    ' Other columns: editable level 1 header
+                    h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i), i, 1))
+                End If
+
             Next
 
-            ' ===== Level 2 =====
+
+            ' --- SECOND HEADER ROW ---
             Dim h2 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
-            For i As Integer = 0 To GridView1.Columns.Count - 1
+            For i As Integer = 1 To colCount - 1
                 h2.Cells.Add(CreateEditableHeaderCell(HeaderLevel2(i), i, 2))
             Next
 
-            ' ===== Level 3 =====
-            Dim h3 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
-            For i As Integer = 0 To GridView1.Columns.Count - 1
+
+            ' --- THIRD HEADER ROW ---
+            Dim h3 As New GridViewRow(2, 0, DataControlRowType.Header, DataControlRowState.Insert)
+
+            For i As Integer = 1 To colCount - 1
                 h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i), i, 3))
             Next
+
 
             table.Rows.AddAt(0, h1)
             table.Rows.AddAt(1, h2)
             table.Rows.AddAt(2, h3)
 
         End If
+
     End Sub
+
 
     <WebMethod()>
     Public Shared Sub SaveHeader(colIndex As Integer, level As Integer, value As String)
