@@ -156,11 +156,30 @@
             txt.select();
         }
     
-    function saveCell(textbox) {
+        function saveCell(textbox) {
+            var wrapper = textbox.closest(".cell-wrapper");
         var lbl = textbox.previousElementSibling;
             lbl.innerText = textbox.value;
             textbox.style.display = "none";
             lbl.style.display = "inline";
+            //alert('');
+            //====================================================
+            //====================================================
+            // Get cell info
+            var rowIndex = wrapper.getAttribute("data-rowindex");
+            var columnName = wrapper.getAttribute("data-column");
+
+            PageMethods.SaveCell(
+                parseInt(rowIndex),
+                columnName,
+                textbox.value,
+                function () {
+                // alert('Saved OK');
+                },
+                function (error) {
+                 //   aler("Error:" + error.get_message());
+                }
+            );
         }
     
     function handleEnter(e, textbox) {
@@ -169,7 +188,15 @@
             return false;
         }
         return true;
-    }
+        }
+
+
+        function testCall() {
+            PageMethods.SaveCell(0, "Col1", "Test",
+                function () { alert("Success"); },
+                function (err) { alert(err.get_message()); }
+            );
+        }
 </script>
 
 

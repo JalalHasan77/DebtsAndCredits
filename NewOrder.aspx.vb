@@ -11,7 +11,7 @@ Partial Class NewOrder
         If Not Page.IsPostBack Then
             Dim DT As New Data.DataTable
             DT = GetDataTable(InfoDB, "Select top 5 MemberName from Members ")
-            clTemp.lcObject = DT
+            'clTemp.lcObject = DT
 
             HttpContext.Current.Session("MyTable") = DT
             LoadFromObject()
@@ -25,11 +25,26 @@ Partial Class NewOrder
     Sub LoadFromObject()
         'Dim DT As New Data.DataTable
         'DT = CType(clTemp.lcObject, DataTable)
+
         Dim dt As DataTable =
         CType(HttpContext.Current.Session("MyTable"), DataTable)
 
         BuildGrid(dt)
     End Sub
+    <WebMethod()>
+    <ScriptMethod()>
+    Public Shared Sub SaveCell(rowIndex As Integer, columnName As String, value As String)
+        MsgBox("")
+        Dim dt As DataTable =
+        CType(HttpContext.Current.Session("MyTable"), DataTable)
+
+        dt.Rows(rowIndex)(columnName) = value
+
+        dt.AcceptChanges()
+
+        HttpContext.Current.Session("MyTable") = dt
+    End Sub
+
 
     Private Sub BuildGrid(ByVal DT As DataTable)
         GridView1.Columns.Clear()
@@ -53,17 +68,15 @@ Partial Class NewOrder
 
 
     Protected Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-        ' Dim DT As New Data.DataTable
+        'Dim DT As New Data.DataTable
         'DT = CType(clTemp.lcObject, DataTable)
-
-        'Dim DC As New DataColumn
-        'DT.Columns.Add(DC)
-
-        'clTemp.lcObject = DT
         Dim dt As DataTable =
         CType(HttpContext.Current.Session("MyTable"), DataTable)
+
         Dim DC As New DataColumn
-        dt.Columns.Add(DC)
+        DT.Columns.Add(DC)
+
+        clTemp.lcObject = DT
 
         LoadFromObject()
 
@@ -81,19 +94,27 @@ Partial Class NewOrder
             Dim h1 As New GridViewRow(0, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
             For i As Integer = 0 To GridView1.Columns.Count - 1
-                h1.Cells.Add(CreateEditableHeaderCell("Item"))
+                h1.Cells.Add(CreateEditableHeaderCell("Total"))
             Next
 
             ' ========= HEADER LEVEL 2 =========
             Dim h2 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
             For i As Integer = 0 To GridView1.Columns.Count - 1
-                h2.Cells.Add(CreateEditableHeaderCell("Price"))
+                h2.Cells.Add(CreateEditableHeaderCell("Item"))
+            Next
+
+            ' ========= HEADER LEVEL 3 =========
+            Dim h3 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
+
+            For i As Integer = 0 To GridView1.Columns.Count - 1
+                h3.Cells.Add(CreateEditableHeaderCell("Price"))
             Next
 
             ' Add header rows
             table.Rows.AddAt(0, h1)
             table.Rows.AddAt(1, h2)
+            table.Rows.AddAt(1, h3)
 
         End If
     End Sub
@@ -139,6 +160,16 @@ Partial Class NewOrder
 
 
 
+    Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+
+        Dim dt As DataTable =
+        CType(HttpContext.Current.Session("MyTable"), DataTable)
+
+
+    End Sub
+    Protected Sub hfRowIndex_ValueChanged(sender As Object, e As EventArgs) Handles hfRowIndex.ValueChanged
+        MsgBox(hfRowIndex.Value)
+    End Sub
 End Class
 
 
@@ -155,17 +186,17 @@ Public Class EditableTemplate
         Dim wrapper As New HtmlGenericControl("div")
         wrapper.Attributes("class") = "cell-wrapper"
         wrapper.Attributes("onclick") = "editCell(this)"
-
+        wrapper.Attributes("data-column") = _columnName
 
         ' LABEL
         Dim lbl As New Label()
         lbl.ID = "lblValue"
 
-        AddHandler lbl.DataBinding, Sub(sender As Object, e As EventArgs)
-                                        Dim l = CType(sender, Label)
-                                        Dim row = CType(l.NamingContainer, GridViewRow)
-                                        l.Text = Convert.ToString(DataBinder.Eval(row.DataItem, _columnName))
-                                    End Sub
+        AddHandler wrapper.DataBinding, Sub(sender As Object, e As EventArgs)
+                                            Dim w = CType(sender, HtmlGenericControl)
+                                            Dim row = CType(w.NamingContainer, GridViewRow)
+                                            w.Attributes("data-rowindex") = row.RowIndex.ToString()
+                                        End Sub
 
         ' TEXTBOX
         Dim txt As New TextBox()
