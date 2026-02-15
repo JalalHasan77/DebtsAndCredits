@@ -158,7 +158,8 @@
     
         function saveCell(textbox) {
             var wrapper = textbox.closest(".cell-wrapper");
-        var lbl = textbox.previousElementSibling;
+            var colIndex = wrapper.getAttribute("data-columnindex");
+            var lbl = textbox.previousElementSibling;
             lbl.innerText = textbox.value;
             textbox.style.display = "none";
             lbl.style.display = "inline";
@@ -180,6 +181,8 @@
 
                 }
             );
+
+            calculateColumn(colIndex);
         }
     
     function handleEnter(e, textbox) {
@@ -201,6 +204,7 @@
         function saveHeader(textbox) {
 
             var wrapper = textbox.closest(".cell-wrapper");
+            var colIndex = wrapper.getAttribute("data-columnindex");
             var lbl = textbox.previousElementSibling;
 
             lbl.innerText = textbox.value;
@@ -217,7 +221,62 @@
                 function () { },
                 function (err) { console.log(err.get_message()); }
             );
+
+            calculateColumn(colIndex);
         }
+
+        function calculateColumn(colIndex) {
+
+            var sum = 0;
+
+            // Sum all data cells in this column
+            var cells = document.querySelectorAll(
+                ".data-cell[data-columnindex='" + colIndex + "'] input"
+            );
+
+            cells.forEach(function (txt) {
+                var val = parseFloat(txt.value);
+                if (!isNaN(val)) {
+                    sum += val;
+                }
+            });
+    
+            // Get price header
+            var priceInput = document.querySelector(
+                ".cell-wrapper[data-columnindex='" + colIndex + "'][data-level='4'] input"
+            );
+
+            if (!priceInput) return;
+
+            var price = parseFloat(priceInput.value);
+            if (isNaN(price)) price = 0;
+
+            var total = sum * price;
+
+            // Update Total header (level 2)
+            var wrapper = document.querySelector(
+                ".cell-wrapper[data-columnindex='" + colIndex + "'][data-level='2']"
+            );
+            var totalLabel = wrapper ? wrapper.querySelector("span") : null;
+
+            if (totalLabel) {
+                totalLabel.innerText = total.toFixed(3);
+
+                // Get Header info
+                var colIndex = wrapper.getAttribute("data-headercol");
+                var level = wrapper.getAttribute("data-headerlevel");
+
+
+                PageMethods.SaveHeader(
+                    parseInt(colIndex),
+                    parseInt(level),
+                    totalLabel.innerText,
+                    function () { },
+                    function (err) { console.log(err.get_message()); }
+                );
+            }
+        }
+
 </script>
 
 

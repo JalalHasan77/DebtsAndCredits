@@ -59,7 +59,6 @@ Partial Class NewOrder
             HeaderLevel3 = Enumerable.Repeat("Item", dt.Columns.Count).ToList()
         End If
 
-
         If Session("HeaderLevel4") Is Nothing Then
             HeaderLevel4 = Enumerable.Repeat("Price", dt.Columns.Count).ToList()
         End If
@@ -122,6 +121,7 @@ Partial Class NewOrder
         HeaderLevel3.Add("Item")
         HeaderLevel4.Add("Price")
 
+
         LoadFromObject()
 
     End Sub
@@ -175,6 +175,7 @@ Partial Class NewOrder
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
+
                 Else
                     ' Only LAST column gets grouped headers
                     h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i), i, 1))
@@ -238,6 +239,9 @@ Partial Class NewOrder
         ElseIf level = 3 Then
             Dim list = CType(HttpContext.Current.Session("HeaderLevel3"), List(Of String))
             list(colIndex) = value
+            'ElseIf level = 4 Then
+            '    Dim list = CType(HttpContext.Current.Session("HeaderLevel3"), List(Of String))
+            '    list(colIndex) = value
         Else
             Dim list = CType(HttpContext.Current.Session("HeaderLevel4"), List(Of String))
             list(colIndex) = value
@@ -277,6 +281,8 @@ Partial Class NewOrder
         Dim wrapper As New HtmlGenericControl("div")
         wrapper.Attributes("class") = "cell-wrapper"
         wrapper.Attributes("onclick") = "editCell(this)"
+        wrapper.Attributes("data-columnindex") = colIndex.ToString()
+        wrapper.Attributes("data-level") = level.ToString()
         wrapper.Attributes("data-headercol") = colIndex.ToString()
         wrapper.Attributes("data-headerlevel") = level.ToString()
         wrapper.Style("width") = "100%"
@@ -390,9 +396,10 @@ Public Class EditableTemplate
 
         ' Create wrapper div
         Dim wrapper As New HtmlGenericControl("div")
-        wrapper.Attributes("class") = "cell-wrapper"
+        wrapper.Attributes("class") = "cell-wrapper data-cell"
         wrapper.Attributes("onclick") = "editCell(this)"
         wrapper.Attributes("data-column") = _columnName
+        wrapper.Attributes("data-columnindex") = _columnIndex.ToString()
 
         ' Create label and textbox
         Dim lbl As New Label()
