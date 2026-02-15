@@ -243,7 +243,7 @@
     
             // Get price header
             var priceInput = document.querySelector(
-                ".cell-wrapper[data-columnindex='" + colIndex + "'][data-level='4'] input"
+                ".cell-wrapper[data-columnindex='" + colIndex + "'][data-level='5'] input"
             );
 
             if (!priceInput) return;

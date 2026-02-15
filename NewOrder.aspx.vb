@@ -56,11 +56,15 @@ Partial Class NewOrder
         End If
 
         If Session("HeaderLevel3") Is Nothing Then
-            HeaderLevel3 = Enumerable.Repeat("Item", dt.Columns.Count).ToList()
+            HeaderLevel3 = Enumerable.Repeat("NoOfItems", dt.Columns.Count).ToList()
         End If
 
         If Session("HeaderLevel4") Is Nothing Then
-            HeaderLevel4 = Enumerable.Repeat("Price", dt.Columns.Count).ToList()
+            HeaderLevel4 = Enumerable.Repeat("Item", dt.Columns.Count).ToList()
+        End If
+
+        If Session("HeaderLevel5") Is Nothing Then
+            HeaderLevel5 = Enumerable.Repeat("Price", dt.Columns.Count).ToList()
         End If
 
         BuildGrid(dt)
@@ -118,8 +122,9 @@ Partial Class NewOrder
 
         HeaderLevel1.Add("Profit")
         HeaderLevel2.Add("Total")
-        HeaderLevel3.Add("Item")
-        HeaderLevel4.Add("Price")
+        HeaderLevel3.Add("NoOfItems")
+        HeaderLevel4.Add("Item")
+        HeaderLevel5.Add("Price")
 
 
         LoadFromObject()
@@ -146,7 +151,7 @@ Partial Class NewOrder
                     ' Member column (span 4 rows)
                     Dim cell As New TableCell()
                     cell.Text = "Member"
-                    cell.RowSpan = 4
+                    cell.RowSpan = 5
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
@@ -155,7 +160,7 @@ Partial Class NewOrder
                     ' Deposit column (span 4 rows)
                     Dim cell As New TableCell()
                     cell.Text = "Deposit"
-                    cell.RowSpan = 4
+                    cell.RowSpan = 5
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
@@ -163,7 +168,7 @@ Partial Class NewOrder
                     ' Deposit column (span 4 rows)
                     Dim cell As New TableCell()
                     cell.Text = "Debit"
-                    cell.RowSpan = 4
+                    cell.RowSpan = 5
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
@@ -171,11 +176,10 @@ Partial Class NewOrder
                     ' Deposit column (span 4 rows)
                     Dim cell As New TableCell()
                     cell.Text = "Profit"
-                    cell.RowSpan = 4
+                    cell.RowSpan = 5
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
-
                 Else
                     ' Only LAST column gets grouped headers
                     h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i), i, 1))
@@ -199,7 +203,6 @@ Partial Class NewOrder
             ' THIRD HEADER ROW
             '========================
             Dim h3 As New GridViewRow(2, 0, DataControlRowType.Header, DataControlRowState.Insert)
-
             For i As Integer = 4 To colCount - 1
                 h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i), i, 3))
             Next
@@ -209,9 +212,17 @@ Partial Class NewOrder
             ' FOURTH HEADER ROW
             '========================
             Dim h4 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
-
             For i As Integer = 4 To colCount - 1
                 h4.Cells.Add(CreateEditableHeaderCell(HeaderLevel4(i), i, 4))
+            Next
+
+
+            '========================
+            ' Fifthe HEADER ROW
+            '========================
+            Dim h5 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
+            For i As Integer = 4 To colCount - 1
+                h5.Cells.Add(CreateEditableHeaderCell(HeaderLevel5(i), i, 5))
             Next
 
 
@@ -219,6 +230,7 @@ Partial Class NewOrder
             table.Rows.AddAt(1, h2)
             table.Rows.AddAt(2, h3)
             table.Rows.AddAt(3, h4)
+            table.Rows.AddAt(4, h5)
 
         End If
 
@@ -239,13 +251,13 @@ Partial Class NewOrder
         ElseIf level = 3 Then
             Dim list = CType(HttpContext.Current.Session("HeaderLevel3"), List(Of String))
             list(colIndex) = value
-            'ElseIf level = 4 Then
-            '    Dim list = CType(HttpContext.Current.Session("HeaderLevel3"), List(Of String))
-            '    list(colIndex) = value
-        Else
+        ElseIf level = 4 Then
             Dim list = CType(HttpContext.Current.Session("HeaderLevel4"), List(Of String))
             list(colIndex) = value
-            HttpContext.Current.Session("HeaderLevel4") = list
+        Else
+            Dim list = CType(HttpContext.Current.Session("HeaderLevel5"), List(Of String))
+            list(colIndex) = value
+            HttpContext.Current.Session("HeaderLevel5") = list
         End If
 
     End Sub
@@ -375,6 +387,18 @@ Partial Class NewOrder
         End Get
         Set(value As List(Of String))
             Session("HeaderLevel4") = value
+        End Set
+    End Property
+
+    Private Property HeaderLevel5 As List(Of String)
+        Get
+            If Session("HeaderLevel5") Is Nothing Then
+                Session("HeaderLevel5") = New List(Of String)
+            End If
+            Return CType(Session("HeaderLevel5"), List(Of String))
+        End Get
+        Set(value As List(Of String))
+            Session("HeaderLevel5") = value
         End Set
     End Property
 
