@@ -24,7 +24,7 @@ Partial Class NewOrder
 
     Sub CreateInitialTable()
         Dim DT As New Data.DataTable
-        DT = GetDataTable(InfoDB, " SELECT MemberName,'0.000' as Deposit, '0.000' as Debt  FROM Members WHERE MemberName IN (" &
+        DT = GetDataTable(InfoDB, " SELECT MemberName,'0.000' as Deposit, '0.000' as Debt,'0.000' as Profit  FROM Members WHERE MemberName IN (" &
     "'Fatima AlHaddad'," &
     "'Fatima Mohammed'," &
     "'Elmeera'," &
@@ -82,8 +82,6 @@ Partial Class NewOrder
 
 
     Private Sub BuildGrid(ByVal DT As DataTable)
-
-
 
         GridView1.Columns.Clear()
         Dim colIndex As Integer = 0
@@ -169,7 +167,14 @@ Partial Class NewOrder
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
-
+                ElseIf i = 3 Then
+                    ' Deposit column (span 4 rows)
+                    Dim cell As New TableCell()
+                    cell.Text = "Profit"
+                    cell.RowSpan = 4
+                    cell.HorizontalAlign = HorizontalAlign.Center
+                    cell.VerticalAlign = VerticalAlign.Middle
+                    h1.Cells.Add(cell)
                 Else
                     ' Only LAST column gets grouped headers
                     h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i), i, 1))
@@ -184,7 +189,7 @@ Partial Class NewOrder
             Dim h2 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
             ' Only for grouped column(s)
-            For i As Integer = 3 To colCount - 1
+            For i As Integer = 4 To colCount - 1
                 h2.Cells.Add(CreateEditableHeaderCell(HeaderLevel2(i), i, 2))
             Next
 
@@ -194,7 +199,7 @@ Partial Class NewOrder
             '========================
             Dim h3 As New GridViewRow(2, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
-            For i As Integer = 3 To colCount - 1
+            For i As Integer = 4 To colCount - 1
                 h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i), i, 3))
             Next
 
@@ -204,7 +209,7 @@ Partial Class NewOrder
             '========================
             Dim h4 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
-            For i As Integer = 3 To colCount - 1
+            For i As Integer = 4 To colCount - 1
                 h4.Cells.Add(CreateEditableHeaderCell(HeaderLevel4(i), i, 4))
             Next
 
@@ -243,29 +248,58 @@ Partial Class NewOrder
 
     Private Function CreateEditableHeaderCell(text As String, colIndex As Integer, level As Integer) As TableCell
 
-        Dim cell As New TableCell
-        cell.Width = Unit.Pixel(100) ' force width
-        cell.HorizontalAlign = HorizontalAlign.Center   ' Horizontal centering
-        cell.VerticalAlign = VerticalAlign.Middle       ' Vertical centering
+        Dim cell As New TableCell()
 
+        ' ===== FIXED CELL WIDTH =====
+        cell.Width = Unit.Pixel(100)
+        cell.HorizontalAlign = HorizontalAlign.Center
+        cell.VerticalAlign = VerticalAlign.Middle
+
+        ' ===== STYLE BASED ON LEVEL =====
+        Select Case level
+
+            Case 1 ' Profit
+                cell.BackColor = Drawing.Color.Orange
+                cell.ForeColor = Drawing.Color.Black
+
+            Case 2 ' Total
+                cell.BackColor = Drawing.Color.Yellow
+                cell.ForeColor = Drawing.Color.Black
+
+            Case 4 ' Price
+                cell.BackColor = Drawing.Color.Black
+                cell.ForeColor = Drawing.Color.White
+
+        End Select
+
+
+        ' Wrapper
         Dim wrapper As New HtmlGenericControl("div")
         wrapper.Attributes("class") = "cell-wrapper"
         wrapper.Attributes("onclick") = "editCell(this)"
         wrapper.Attributes("data-headercol") = colIndex.ToString()
         wrapper.Attributes("data-headerlevel") = level.ToString()
+        wrapper.Style("width") = "100%"
+        wrapper.Style("text-align") = "center"
 
+        ' Label
         Dim lbl As New Label()
-
+        lbl.ID = "lblHeader_" & level & "_" & colIndex
         lbl.Text = text
+        lbl.ForeColor = cell.ForeColor
+        lbl.Style("display") = "inline-block"
+        lbl.Style("width") = "100%"
+        lbl.Style("text-align") = "center"
+
+        ' TextBox
         Dim txt As New TextBox()
-
-
-        lbl.ID = String.Format("lblValue_{0}_{1}_0", level, colIndex)
-        txt.ID = String.Format("txtValue_{0}_{1}_0", level, colIndex)
-
+        txt.ID = "txtHeader_" & level & "_" & colIndex
         txt.Text = text
         txt.Style("display") = "none"
-        txt.Style("width") = "85%"
+        txt.Width = Unit.Pixel(90)   ' ===== TEXTBOX WIDTH 90px =====
+        txt.Style("text-align") = "center"
+        txt.BackColor = cell.BackColor
+        txt.ForeColor = cell.ForeColor
         txt.Attributes("onblur") = "saveHeader(this)"
         txt.Attributes("onkeydown") = "return handleEnter(event, this);"
 
@@ -274,7 +308,9 @@ Partial Class NewOrder
         cell.Controls.Add(wrapper)
 
         Return cell
+
     End Function
+
 
     Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
 

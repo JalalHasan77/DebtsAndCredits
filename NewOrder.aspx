@@ -254,6 +254,8 @@
                                         <asp:HiddenField ID="hfNewValue" runat="server" />
                                         <asp:Label ID="Label2" runat="server" Text="Label"></asp:Label>
                                         <asp:Button ID="btnTest" runat="server" Text="Test" OnClientClick="testCall(); return false;" />
+
+
                                     </td>
                                     <td style="width: 60%;align-items:flex-start" >
                                     <asp:Button ID="Button2" runat="server" Text="Button" />
