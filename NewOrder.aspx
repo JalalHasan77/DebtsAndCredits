@@ -251,26 +251,32 @@
             var price = parseFloat(priceInput.value);
             if (isNaN(price)) price = 0;
 
-            var total = sum * price;
+            var lcValue = sum * price;
 
-            // Update Total header (level 2)
+            updateHeader(colIndex, '2', lcValue);
+            updateHeader(colIndex, '3', sum);
+        }
+
+
+        function updateHeader(colIndex, level, lcValue) {
+
             var wrapper = document.querySelector(
-                ".cell-wrapper[data-columnindex='" + colIndex + "'][data-level='2']"
+                ".cell-wrapper[data-columnindex='" + colIndex + "'][data-level='" + level + "']"
             );
-            var totalLabel = wrapper ? wrapper.querySelector("span") : null;
 
-            if (totalLabel) {
-                totalLabel.innerText = total.toFixed(3);
+            var lcLabel = wrapper ? wrapper.querySelector("span") : null;
+
+            if (lcLabel) {
+                lcLabel.innerText = lcValue.toFixed(3);
 
                 // Get Header info
-                var colIndex = wrapper.getAttribute("data-headercol");
-                var level = wrapper.getAttribute("data-headerlevel");
-
+                var headerColIndex = wrapper.getAttribute("data-headercol");
+                var headerLevel = wrapper.getAttribute("data-headerlevel");
 
                 PageMethods.SaveHeader(
-                    parseInt(colIndex),
-                    parseInt(level),
-                    totalLabel.innerText,
+                    parseInt(headerColIndex),
+                    parseInt(headerLevel),
+                    lcLabel.innerText,
                     function () { },
                     function (err) { console.log(err.get_message()); }
                 );
