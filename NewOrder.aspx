@@ -182,8 +182,127 @@
                 }
             );
 
+
             calculateColumn(colIndex);
+           //updateRowProfit(rowIndex);
+            iterateRowCells(rowIndex);
+           // iterateColumnCells(colIndex);
+
         }
+
+
+
+        function iterateRowCells(rowIndex) {
+
+            rowIndex = rowIndex.toString();
+
+            var rowCells = document.querySelectorAll(
+                ".cell-wrapper[data-rowindex='" + rowIndex + "']"
+            );
+            var MasterTotalProfit;
+            MasterTotalProfit = 0;
+
+            rowCells.forEach(function (cellWrapper) {
+                var TotalProfit;
+                TotalProfit = 0;
+
+                var colIndex = parseInt(cellWrapper.getAttribute("data-columnindex"));
+
+    
+                // ✅ Skip first 4 columns
+                if (colIndex <= 3) return;
+
+                var span = cellWrapper.querySelector("span");
+                var input = cellWrapper.querySelector("input");
+
+                var value = 0;
+
+                if (span && span.innerText.trim() !== "") {
+                    value = parseFloat(span.innerText) || 0;
+                }
+                else if (input && input.value.trim() !== "") {
+                    value = parseFloat(input.value) || 0;
+                  
+                }
+                
+                if (value != 0) {
+                   // alert(value);
+                    var cellWrapper2 = document.querySelector(
+                        ".cell-wrapper[data-headercol='" + colIndex + "'][data-headerlevel='1']"
+                    );
+                    var value2;
+                    var span2 = cellWrapper2.querySelector("span");
+                    var input2 = cellWrapper2.querySelector("input");
+                    if (span2 && span2.innerText.trim() !== "") {
+                        value2 = parseFloat(span2.innerText) || 0;
+                    }
+                    else if (input2 && input2.value.trim() !== "") {
+                        value2 = parseFloat(input2.value) || 0;
+                    }
+
+                    if (value2 != 0) {
+                      //  alert('Net profit' + value * value2);
+                        MasterTotalProfit = MasterTotalProfit + value * value2;
+                    }
+                }
+                // 👉 Your calculation here
+            });
+
+
+            var profitCell = document.querySelector(
+                ".cell-wrapper[data-rowindex='" + rowIndex + "'][data-columnindex='3'] span"
+            );
+            var columnName = "Profit";
+            
+
+            if (profitCell) {
+                profitCell.innerText = MasterTotalProfit.toFixed(2);
+
+                PageMethods.SaveCell(
+                    parseInt(rowIndex),
+                    columnName,
+                    MasterTotalProfit,
+                    function () {
+
+                    },
+                    function (error) {
+
+                    }
+                );
+
+            }
+
+        }
+
+
+
+        function iterateColumnCells(colIndex) {
+
+            colIndex = colIndex.toString();
+
+            var columnCells = document.querySelectorAll(
+                ".cell-wrapper[data-columnindex='" + colIndex + "']"
+            );
+
+
+            columnCells.forEach(function (cellWrapper) {
+
+                var rowIndex = cellWrapper.getAttribute("data-rowindex");
+               
+                var span = cellWrapper.querySelector("span");
+                var input = cellWrapper.querySelector("input");
+
+                var value = 0;
+
+                if (span && span.innerText.trim() !== "")
+                    value = parseFloat(span.innerText) || 0;
+                else if (input && input.value.trim() !== "")
+                    value = parseFloat(input.value) || 0;
+                // 👉 Do your calculation here
+            });
+        }
+
+
     
     function handleEnter(e, textbox) {
         if (e.key === "Enter") {
@@ -191,14 +310,6 @@
             return false;
         }
         return true;
-        }
-
-
-        function testCall() {
-            PageMethods.SaveCell(0, "Col1", "Test",
-                function () { alert("Success"); },
-                function (err) { alert(err.get_message()); }
-            );
         }
 
         function saveHeader(textbox) {

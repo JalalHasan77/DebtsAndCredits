@@ -251,9 +251,11 @@ Partial Class NewOrder
         ElseIf level = 3 Then
             Dim list = CType(HttpContext.Current.Session("HeaderLevel3"), List(Of String))
             list(colIndex) = value
+            HttpContext.Current.Session("HeaderLevel3") = list
         ElseIf level = 4 Then
             Dim list = CType(HttpContext.Current.Session("HeaderLevel4"), List(Of String))
             list(colIndex) = value
+            HttpContext.Current.Session("HeaderLevel4") = list
         Else
             Dim list = CType(HttpContext.Current.Session("HeaderLevel5"), List(Of String))
             list(colIndex) = value
