@@ -29,8 +29,8 @@ Partial Class NewOrder
     "'Fatima Mohammed'," &
     "'Elmeera'," &
     "'Roqaya'," &
-    "'Jalal'" &
-    ");")
+    "'Jalal'," &
+    "'Safa Shamsan','Areej') order by ID;")
 
         'DT.Rows.Add(DR)
         HttpContext.Current.Session("MyTable") = DT

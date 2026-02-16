@@ -185,6 +185,7 @@
 
             calculateColumn(colIndex);
            //updateRowProfit(rowIndex);
+            //alert('rowIndex :' + rowIndex + 'colIndex: ' + colIndex);
             iterateRowCells(rowIndex);
            // iterateColumnCells(colIndex);
 
@@ -193,7 +194,6 @@
 
 
         function iterateRowCells(rowIndex) {
-
             rowIndex = rowIndex.toString();
 
             var rowCells = document.querySelectorAll(
@@ -253,31 +253,24 @@
                 ".cell-wrapper[data-rowindex='" + rowIndex + "'][data-columnindex='3'] span"
             );
             var columnName = "Profit";
-            
-
             if (profitCell) {
-                profitCell.innerText = MasterTotalProfit.toFixed(2);
+                profitCell.innerText = MasterTotalProfit.toFixed(3);
 
                 PageMethods.SaveCell(
                     parseInt(rowIndex),
                     columnName,
-                    MasterTotalProfit,
+                    profitCell.innerText,
                     function () {
-
                     },
                     function (error) {
-
                     }
                 );
-
             }
-
         }
 
 
 
         function iterateColumnCells(colIndex) {
-
             colIndex = colIndex.toString();
 
             var columnCells = document.querySelectorAll(
@@ -334,8 +327,29 @@
             );
 
             calculateColumn(colIndex);
+
+            if (level == 1) {
+             iterateThroughAllCells()
+            }
+
         }
 
+
+        function iterateThroughAllCells() {
+            //====================
+            var rowCells = document.querySelectorAll(
+                ".cell-wrapper[data-columnindex='4']"
+            );
+            rowCells.forEach(function (cellWrapper) {
+                var rowIndex = cellWrapper.getAttribute("data-rowindex");
+
+                if (parseInt(rowIndex) > 0) {
+                    // safe to execute
+                    iterateRowCells(rowIndex);
+                }
+            })
+            }
+        
         function calculateColumn(colIndex) {
 
             var sum = 0;
