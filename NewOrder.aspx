@@ -25,116 +25,40 @@
     background-color: #f5f5f5;
 }
 
-        /*        .auto-style5 {
-            width: 862px; 
-        }*/
-        
-        /*.lblSpacing 
-        { 
-    padding-left: 3px;
-    padding-right: 3px; 
-    padding-top: 3px; 
-    padding-bottom: 3px; 
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
-    border: 1px solid grey;
+.txtbox {
+    border-radius: 5px;
+    /*border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;*/
+    height: 25px;
+    background: #f2f2f2;
+    border: 1px solid #676767;
+    width: 100%
+}
+
+<style>
+    .outerBlock {
+        text-align: left;
+        width: 100%;
     }
 
-                .lblSpacing2 
-        { 
-    padding-left: 3px;
-    padding-right: 3px; 
-    padding-top: 3px; 
-    padding-bottom: 3px; 
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border-radius: 7px;
-    border: 1px solid grey;
-    }*/
+    .row {
+        margin-bottom: 8px;
+        text-align: left;
+    }
 
-        /*.sash {
-  position: relative;
- overflow: hidden;*/
- /* width: 300px;*/
-/*}
-.sash:after {
-  content: attr(data-ribbon);
-  position: absolute;
-  width: 90px;
-  height: 30px;
-  background: red;
-  top: 5px;
-  text-align: center;
-  line-height: 30px;
-  right: -27px;
-  transform: rotate(49deg);
-}*/
+    .labelCol {
+        display: inline-block;
+        width: 100px;   /* adjust this width as needed */
+        vertical-align: middle;
+    }
 
-/*.container {*/
-/*  margin:50px;
-  width:400px;
-  height:200px;
-  background: white;*/
-  /*box-shadow:0px 0px 8px rgba(0,0,0,0.25);
-  position: relative;
-}
+    .spacer {
+        display: inline-block;
+        width: 15px;
+    }
 
-.ribbon-container {
-  width:120px;
-  height:120px;
-  overflow: hidden;
-  position: absolute;
-  top: -3px;
-  right: -3px;
-}
-
-.ribbon {
-  background-color:maroon;
-  font:15px;
-  color: white;
-  text-align: center;
-  text-shadow: rgba(0,0,0,0.8) 0px 1px 0px;
-  transform: rotate(45deg);
-  position: relative;
-  padding: 5px;
-  left: -10px;
-  top: 25px;
-  width: 160px;
-  background-image: -webkit-gradient(linear, left top, left bottom,  from(rgb(200,50,50)), to(rgb(255,100,100)));
-  box-shadow:0px 0px 3px rgba(0,0,0,0.3);
-}
-
-.ribbon2{
-  background-color:maroon;
-  font:15px;
-  font-family: "Raleway",sans-serif;
-  font-weight:300;
-  color: white;
-  text-align: center;
-  text-shadow: rgba(0,0,0,0.8) 0px 1px 0px;
-  position: relative;
-  padding: 5px;
-  width: 160px;
-  -webkit-transition: all 0.4s ease 0s;
-  -o-transition: all 0.4s ease 0s;
-  transition: all 0.4s ease 0s;
-  background-image: -webkit-gradient(linear, left top, left bottom,  from(rgb(200,50,50)), to(rgb(255,100,100)));
-  box-shadow:0px 0px 3px rgba(0,0,0,0.3);
-}
-
-.contain{
-  width:120px;
-  height:120px;
-  overflow: hidden;
-  position: absolute;
-  top: -3px;
-  right: -3px;
-}
-
-.space{
-    margin-top:10px;
-}*/
 
         .auto-style4 {
             direction: ltr;
@@ -420,7 +344,7 @@
                     <table cellpadding="15" cellspacing="15" class="auto-style2">
                         <tr>
                             <td style="width: 50%">
-                    <asp:Label ID="Label1" runat="server" Font-Names="Arial" Font-Size="24pt" Text="Order" ForeColor="White"></asp:Label>
+                    <asp:Label ID="Label1" runat="server" Font-Names="Arial" Font-Size="24pt" Text="Debit/Credit Transaction" ForeColor="White"></asp:Label>
                             </td>
                             <td style="vertical-align: top; width: 50%;" align="right">
                             <cc1:anyObject ID="clTemp" runat="server" Visible="False" />
@@ -446,8 +370,65 @@
                                     </td>
                                     <td style="width: 60%;align-items:flex-start" >
                                     <asp:Button ID="Button2" runat="server" Text="Button" />
-                                     <br />
-                                                                             <br />
+                                     <br />                                        <div class="outerBlock">
+
+    <div class="row">
+        <span class="labelCol">
+            <asp:LinkButton ID="LinkButton3" runat="server" Font-Names="Arial">
+                Vender
+            </asp:LinkButton>
+        </span>
+        <asp:TextBox ID="TextBox1" runat="server" CssClass="txtbox" Width="300px"></asp:TextBox>
+    </div>
+
+    <div class="row">
+        <span class="labelCol">
+            <asp:Label ID="Label3" runat="server" Text="Date" Font-Names="Arial"></asp:Label>
+        </span>
+        <asp:TextBox ID="TextBox2" runat="server" CssClass="txtbox" Width="150px"></asp:TextBox>
+
+        <span class="spacer"></span>
+
+        <asp:Label ID="Label4" runat="server" Text="Time" Font-Names="Arial"></asp:Label>
+        <asp:TextBox ID="TextBox3" runat="server" CssClass="txtbox" Width="50px"></asp:TextBox>
+    </div>
+
+    <div class="row">
+        <span class="labelCol">
+                <asp:Label ID="Label5" runat="server" Text="Number" Font-Names="Arial"></asp:Label>
+        </span>
+        <asp:TextBox ID="TextBox4" runat="server" CssClass="txtbox" Width="50px"></asp:TextBox>
+
+    </div>
+
+
+</div>
+                                        <br />
+<div class="row">
+    <asp:LinkButton ID="LinkButton5" runat="server" Font-Names="Arial" Font-Size="14px">
+        Add Other Expenses/Discounts
+    </asp:LinkButton>
+</div>
+<br />
+<div class="row">
+    <asp:LinkButton ID="LinkButton2" runat="server" Font-Names="Arial" Font-Size="14px">
+        Add Members
+    </asp:LinkButton>
+
+    <span style="display:inline-block; width:15px;"></span>
+
+    <asp:LinkButton ID="LinkButton1" runat="server" Font-Names="Arial" Font-Size="14px">
+        Add one Item
+    </asp:LinkButton>
+
+    <span style="display:inline-block; width:15px;"></span>
+
+    <asp:LinkButton ID="LinkButton4" runat="server" Font-Names="Arial" Font-Size="14px">
+        Add one Column
+    </asp:LinkButton>
+</div>
+
+
                                         <div style="display: flex;flex-direction: row; justify-content:flex-start">
 
                                         <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated" Font-Size="12px">
