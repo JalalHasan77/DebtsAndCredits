@@ -5,7 +5,7 @@ Partial Class NewOrder
     Inherits System.Web.UI.Page
 
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
-        AddJQueryLinks(Page, True)
+        'AddJQueryLinks(Page, True)
 
         If Not Page.IsPostBack Then
             'Dim DT As New Data.DataTable
@@ -15,8 +15,14 @@ Partial Class NewOrder
             'HttpContext.Current.Session("MyTable") = DT
             'LoadFromObject()
             CreateInitialTable()
-
         End If
+
+        LoadVendorOptions()
+
+        If Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then
+            TextBox1.Text = hdnSelectedVendorText.Value
+        End If
+
         LoadFromObject()
 
 
@@ -116,7 +122,7 @@ Partial Class NewOrder
         CType(HttpContext.Current.Session("MyTable"), DataTable)
 
         Dim DC As New DataColumn
-        DT.Columns.Add(DC)
+        dt.Columns.Add(DC)
 
         clTemp.lcObject = dt
 
@@ -339,6 +345,17 @@ Partial Class NewOrder
 
 
     End Sub
+
+    Protected Sub LinkButton3_Click(sender As Object, e As EventArgs) Handles LinkButton3.Click
+        Dim selectedVendorValue As String = hdnSelectedVendorValue.Value
+        Dim selectedVendorText As String = hdnSelectedVendorText.Value
+
+        TextBox1.Text = selectedVendorText
+
+        ' Add your vendor-related server-side logic here.
+        ' Example:
+        ' Label2.Text = "Selected vendor: " & selectedVendorText & " (" & selectedVendorValue & ")"
+    End Sub
     Protected Sub hfRowIndex_ValueChanged(sender As Object, e As EventArgs) Handles hfRowIndex.ValueChanged
         'MsgBox(hfRowIndex.Value)
     End Sub
@@ -403,6 +420,22 @@ Partial Class NewOrder
             Session("HeaderLevel5") = value
         End Set
     End Property
+
+    Private Sub LoadVendorOptions()
+        Dim options As New List(Of OptionItem) From {
+            New OptionItem With {.OptionName = "Product Alpha", .OptionValue = "ALPHA"},
+            New OptionItem With {.OptionName = "Product Beta", .OptionValue = "BETA"},
+            New OptionItem With {.OptionName = "Product Gamma", .OptionValue = "GAMMA"}
+        }
+
+        rptVendorOptions.DataSource = options
+        rptVendorOptions.DataBind()
+    End Sub
+
+    Public Class OptionItem
+        Public Property OptionName As String
+        Public Property OptionValue As String
+    End Class
 
 End Class
 

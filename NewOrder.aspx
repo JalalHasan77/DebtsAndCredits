@@ -9,62 +9,113 @@
             width: 100%;
             border-collapse: collapse;
         }
+
         .auto-style3 {
             width: 90%;
             border-collapse: collapse;
         }
 
         .cell-wrapper {
-    width: 100%;
-    height: 100%;
-    cursor: pointer;
-    padding: 4px;
-}
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            padding: 4px;
+        }
 
-.cell-wrapper:hover {
-    background-color: #f5f5f5;
-}
+        .cell-wrapper:hover {
+            background-color: #f5f5f5;
+        }
 
-.txtbox {
-    border-radius: 5px;
-    /*border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
-    border-bottom-left-radius: 5px;
-    border-bottom-right-radius: 5px;*/
-    height: 25px;
-    background: #f2f2f2;
-    border: 1px solid #676767;
-    width: 100%
-}
+        .txtbox {
+            border-radius: 5px;
+            height: 25px;
+            background: #f2f2f2;
+            border: 1px solid #676767;
+            width: 100%;
+        }
 
-<style>
-    .outerBlock {
-        text-align: left;
-        width: 100%;
-    }
+        .outerBlock {
+            text-align: left;
+            width: 100%;
+        }
 
-    .row {
-        margin-bottom: 8px;
-        text-align: left;
-    }
+        .row {
+            margin-bottom: 8px;
+            text-align: left;
+        }
 
-    .labelCol {
-        display: inline-block;
-        width: 100px;   /* adjust this width as needed */
-        vertical-align: middle;
-    }
+        .labelCol {
+            display: inline-block;
+            width: 100px;
+            vertical-align: middle;
+        }
 
-    .spacer {
-        display: inline-block;
-        width: 15px;
-    }
-
+        .spacer {
+            display: inline-block;
+            width: 15px;
+        }
 
         .auto-style4 {
             direction: ltr;
         }
 
-        </style>
+        #vendorModalOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            z-index: 1000;
+        }
+
+        #vendorModalDialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 420px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            padding: 30px;
+            z-index: 1001;
+        }
+
+        #vendorModalDialog h3 {
+            margin-top: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .option-link {
+            display: block;
+            padding: 10px 14px;
+            margin: 6px 0;
+            background: #f0f4ff;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #333;
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .option-link:hover {
+            background: #d0dcff;
+        }
+
+        .btn-close {
+            margin-top: 16px;
+            padding: 8px 18px;
+            background: #cc0000;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
 
     <script type="text/javascript">
 
@@ -329,6 +380,31 @@
             }
         }
 
+        function openVendorDialog() {
+            document.getElementById('vendorModalOverlay').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeVendorDialog() {
+            document.getElementById('vendorModalOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        function receiveVendorValue(selectedValue, displayText) {
+            var vendorText = displayText || selectedValue;
+            document.getElementById('<%= hdnSelectedVendorValue.ClientID %>').value = selectedValue;
+            document.getElementById('<%= hdnSelectedVendorText.ClientID %>').value = vendorText;
+            document.getElementById('<%= TextBox1.ClientID %>').value = vendorText;
+            closeVendorDialog();
+            __doPostBack('<%= LinkButton3.UniqueID %>', 'selected');
+        }
+
+        function vendorOverlayClicked(e) {
+            if (e.target === document.getElementById('vendorModalOverlay')) {
+                // keep modal open when clicking backdrop
+            }
+        }
+
 </script>
 
 
@@ -374,11 +450,13 @@
 
     <div class="row">
         <span class="labelCol">
-            <asp:LinkButton ID="LinkButton3" runat="server" Font-Names="Arial">
+            <asp:LinkButton ID="LinkButton3" runat="server" Font-Names="Arial" OnClientClick="openVendorDialog(); return false;">
                 Vender
             </asp:LinkButton>
         </span>
-        <asp:TextBox ID="TextBox1" runat="server" CssClass="txtbox" Width="300px"></asp:TextBox>
+        <asp:TextBox ID="TextBox1" runat="server" CssClass="txtbox" Width="300px" ReadOnly="true"></asp:TextBox>
+        <asp:HiddenField ID="hdnSelectedVendorValue" runat="server" />
+        <asp:HiddenField ID="hdnSelectedVendorText" runat="server" />
     </div>
 
     <div class="row">
@@ -472,6 +550,29 @@
                      </tr>
                         </table>
 
+        <div id="vendorModalOverlay" onclick="vendorOverlayClicked(event);">
+            <div id="vendorModalDialog">
+                <h3>&#10022; Select a Vendor</h3>
+
+                <a class="option-link" href="javascript:void(0);" onclick="receiveVendorValue('ALPHA', 'Product Alpha');">Product Alpha</a>
+                <a class="option-link" href="javascript:void(0);" onclick="receiveVendorValue('BETA', 'Product Beta');">Product Beta</a>
+                <a class="option-link" href="javascript:void(0);" onclick="receiveVendorValue('GAMMA', 'Product Gamma');">Product Gamma</a>
+
+                <hr />
+
+                <asp:Repeater ID="rptVendorOptions" runat="server">
+                    <ItemTemplate>
+                        <a class="option-link" href="javascript:void(0);"
+                           onclick="receiveVendorValue('<%# Eval("OptionValue") %>', '<%# Eval("OptionName") %>');">
+                            <%# Eval("OptionName") %>
+                        </a>
+                    </ItemTemplate>
+                </asp:Repeater>
+
+                <br />
+                <button type="button" class="btn-close" onclick="closeVendorDialog();">&#10005; Cancel</button>
+            </div>
+        </div>
 </form>
 </body>
 </html>
