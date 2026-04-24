@@ -49,8 +49,8 @@
         <asp:Repeater ID="rptVendorOptions" runat="server">
             <ItemTemplate>
                 <a class="option-link" href="javascript:void(0);"
-                   onclick="selectVendor('<%# Eval("OptionValue") %>', '<%# Eval("OptionName") %>');">
-                    <%# Eval("OptionName") %>
+                   onclick="selectVendor('<%# System.Web.HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("OptionValue"))) %>', '<%# System.Web.HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("OptionName"))) %>');">
+                    <%# Server.HtmlEncode(Convert.ToString(Eval("OptionName"))) %>
                 </a>
             </ItemTemplate>
         </asp:Repeater>
