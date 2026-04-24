@@ -396,7 +396,7 @@
             document.getElementById('<%= hdnSelectedVendorText.ClientID %>').value = vendorText;
             document.getElementById('<%= TextBox1.ClientID %>').value = vendorText;
             closeVendorDialog();
-            __doPostBack('<%= LinkButton3.UniqueID %>', 'selected');
+            __doPostBack('<%= LinkButton3.UniqueID %>', '');
         }
 
         function vendorOverlayClicked(e) {
@@ -455,6 +455,7 @@
             </asp:LinkButton>
         </span>
         <asp:TextBox ID="TextBox1" runat="server" CssClass="txtbox" Width="300px" ReadOnly="true"></asp:TextBox>
+        <asp:Label ID="Label6" runat="server" Text="Label"></asp:Label>
         <asp:HiddenField ID="hdnSelectedVendorValue" runat="server" />
         <asp:HiddenField ID="hdnSelectedVendorText" runat="server" />
     </div>

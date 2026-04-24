@@ -351,6 +351,7 @@ Partial Class NewOrder
         Dim selectedVendorText As String = hdnSelectedVendorText.Value
 
         TextBox1.Text = selectedVendorText
+        Label6.Text = hdnSelectedVendorText.Value
 
         ' Add your vendor-related server-side logic here.
         ' Example:
