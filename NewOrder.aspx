@@ -80,8 +80,38 @@
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            padding: 15px;
+            padding: 0 15px 15px 15px;
             z-index: 1001;
+        }
+
+        .vendor-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0 10px 0;
+            border-bottom: 1px solid #e5e5e5;
+            margin-bottom: 12px;
+        }
+
+        .vendor-modal-title {
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .btn-close-x {
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+            padding: 0 4px;
+        }
+
+        .btn-close-x:hover {
+            color: #cc0000;
         }
 
         #vendorPopupFrame {
@@ -90,8 +120,12 @@
             border: none;
         }
 
-        .btn-close {
+        .vendor-modal-footer {
             margin-top: 12px;
+            text-align: right;
+        }
+
+        .btn-close {
             padding: 8px 18px;
             background: #cc0000;
             color: #fff;
@@ -99,6 +133,10 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+        }
+
+        .btn-close:hover {
+            background: #a80000;
         }
     </style>
 
@@ -386,11 +424,6 @@
             __doPostBack('<%= LinkButton3.UniqueID %>', '');
         }
 
-        function vendorOverlayClicked(e) {
-            if (e.target === document.getElementById('vendorModalOverlay')) {
-                closeVendorDialog();
-            }
-        }
 
 </script>
 
@@ -538,11 +571,16 @@
                      </tr>
                         </table>
 
-        <div id="vendorModalOverlay" onclick="vendorOverlayClicked(event);">
-            <div id="vendorModalDialog">
+        <div id="vendorModalOverlay">
+            <div id="vendorModalDialog" role="dialog" aria-modal="true" aria-labelledby="vendorModalTitle">
+                <div class="vendor-modal-header">
+                    <span id="vendorModalTitle" class="vendor-modal-title">Select Vendor</span>
+                    <button type="button" class="btn-close-x" onclick="closeVendorDialog();" aria-label="Close popup">&#10005;</button>
+                </div>
                 <iframe id="vendorPopupFrame" src="about:blank"></iframe>
-                <br />
-                <button type="button" class="btn-close" onclick="closeVendorDialog();">&#10005; Cancel</button>
+                <div class="vendor-modal-footer">
+                    <button type="button" class="btn-close" onclick="closeVendorDialog();">Cancel</button>
+                </div>
             </div>
         </div>
 </form>
