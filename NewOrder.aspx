@@ -58,87 +58,7 @@
         .auto-style4 {
             direction: ltr;
         }
-
-        #vendorModalOverlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.55);
-            z-index: 1000;
-        }
-
-        #vendorModalDialog {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 760px;
-            max-width: 95%;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            padding: 0 15px 15px 15px;
-            z-index: 1001;
-        }
-
-        .vendor-modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 0 10px 0;
-            border-bottom: 1px solid #e5e5e5;
-            margin-bottom: 12px;
-        }
-
-        .vendor-modal-title {
-            font-family: Arial, sans-serif;
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .btn-close-x {
-            background: transparent;
-            border: none;
-            color: #666;
-            cursor: pointer;
-            font-size: 24px;
-            line-height: 1;
-            padding: 0 4px;
-        }
-
-        .btn-close-x:hover {
-            color: #cc0000;
-        }
-
-        #vendorPopupFrame {
-            width: 100%;
-            height: 450px;
-            border: none;
-        }
-
-        .vendor-modal-footer {
-            margin-top: 12px;
-            text-align: right;
-        }
-
-        .btn-close {
-            padding: 8px 18px;
-            background: #cc0000;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .btn-close:hover {
-            background: #a80000;
-        }
-    </style>
+</style>
 
     <script type="text/javascript">
 
@@ -180,13 +100,10 @@
                 }
             );
 
-
             calculateColumn(colIndex);
             iterateRowCells(rowIndex);
 
         }
-
-
 
         function iterateRowCells(rowIndex) {
             rowIndex = rowIndex.toString();
@@ -202,7 +119,6 @@
                 TotalProfit = 0;
 
                 var colIndex = parseInt(cellWrapper.getAttribute("data-columnindex"));
-
 
                 // ✅ Skip first 4 columns
                 if (colIndex <= 3) return;
@@ -243,7 +159,6 @@
                 // 👉 Your calculation here
             });
 
-
             var profitCell = document.querySelector(
                 ".cell-wrapper[data-rowindex='" + rowIndex + "'][data-columnindex='3'] span"
             );
@@ -263,15 +178,12 @@
             }
         }
 
-
-
         function iterateColumnCells(colIndex) {
             colIndex = colIndex.toString();
 
             var columnCells = document.querySelectorAll(
                 ".cell-wrapper[data-columnindex='" + colIndex + "']"
             );
-
 
             columnCells.forEach(function (cellWrapper) {
 
@@ -289,8 +201,6 @@
                 // 👉 Do your calculation here
             });
         }
-
-
 
         function handleEnter(e, textbox) {
             if (e.key === "Enter") {
@@ -328,7 +238,6 @@
             }
 
         }
-
 
         function iterateThroughAllCells() {
             //====================
@@ -377,7 +286,6 @@
             updateHeader(colIndex, '3', sum);
         }
 
-
         function updateHeader(colIndex, level, lcValue) {
 
             var wrapper = document.querySelector(
@@ -402,31 +310,7 @@
                 );
             }
         }
-
-        function openVendorDialog() {
-            document.getElementById('vendorPopupFrame').src = 'VendorPopup.aspx';
-            document.getElementById('vendorModalOverlay').style.display = 'block';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeVendorDialog() {
-            document.getElementById('vendorModalOverlay').style.display = 'none';
-            document.getElementById('vendorPopupFrame').src = 'about:blank';
-            document.body.style.overflow = '';
-        }
-
-        function receiveVendorValue(selectedValue, displayText) {
-            var vendorText = displayText || selectedValue;
-            document.getElementById('<%= hdnSelectedVendorValue.ClientID %>').value = selectedValue;
-            document.getElementById('<%= hdnSelectedVendorText.ClientID %>').value = vendorText;
-            document.getElementById('<%= TextBox1.ClientID %>').value = vendorText;
-            closeVendorDialog();
-            __doPostBack('<%= LinkButton3.UniqueID %>', '');
-        }
-
-
 </script>
-
 
 </head>
 <body style="margin: 0px;">
@@ -462,6 +346,13 @@
                                         <asp:Label ID="Label2" runat="server" Text="Label"></asp:Label>
                                         <asp:Button ID="btnTest" runat="server" Text="Test" OnClientClick="testCall(); return false;" />
 
+                                        <br />
+                                        <br />
+        <span class="labelCol">
+            <asp:LinkButton ID="LinkButton6" runat="server" Font-Names="Arial" >
+                Vender
+            </asp:LinkButton>
+        </span>
 
                                     </td>
                                     <td style="width: 60%;align-items:flex-start" >
@@ -470,7 +361,7 @@
 
     <div class="row">
         <span class="labelCol">
-            <asp:LinkButton ID="LinkButton3" runat="server" Font-Names="Arial" OnClientClick="openVendorDialog(); return false;">
+            <asp:LinkButton ID="LinkButton3" runat="server" Font-Names="Arial" >
                 Vender
             </asp:LinkButton>
         </span>
@@ -500,7 +391,6 @@
 
     </div>
 
-
 </div>
                                         <br />
 <div class="row">
@@ -526,7 +416,6 @@
         Add one Column
     </asp:LinkButton>
 </div>
-
 
                                         <div style="display: flex;flex-direction: row; justify-content:flex-start">
 
@@ -570,19 +459,6 @@
                         </td>
                      </tr>
                         </table>
-
-        <div id="vendorModalOverlay">
-            <div id="vendorModalDialog" role="dialog" aria-modal="true" aria-labelledby="vendorModalTitle">
-                <div class="vendor-modal-header">
-                    <span id="vendorModalTitle" class="vendor-modal-title">Select Vendor</span>
-                    <button type="button" class="btn-close-x" onclick="closeVendorDialog();" aria-label="Close popup">&#10005;</button>
-                </div>
-                <iframe id="vendorPopupFrame" src="about:blank"></iframe>
-                <div class="vendor-modal-footer">
-                    <button type="button" class="btn-close" onclick="closeVendorDialog();">Cancel</button>
-                </div>
-            </div>
-        </div>
 </form>
 </body>
 </html>
