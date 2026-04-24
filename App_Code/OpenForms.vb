@@ -118,6 +118,7 @@
                    Optional AddjsDialogWithoutDatePicker As Boolean = False)
 
         Dim laServerUrl As String() = Split(p.Request.Url.ToString, "/")
+
         Dim lcServerUrl As String = laServerUrl(0) + "//" + laServerUrl(2) + GetAppPath()
 
         '==by Jalal

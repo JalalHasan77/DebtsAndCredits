@@ -18,26 +18,35 @@ Public Module DB
             Return ICBS_CS()
         End Get
     End Property
-    Private Function EBDB_CS(Optional lcDatabase As String = "EBDB", Optional lcUserID As String = "inap", Optional lcUserPW As String = "inap") As String
-        EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
-        Dim lcServerName As String = Get_Server_Name()
-        If InStr(UCase(Left(lcServerName, 20)), "DRWEB") > 0 Then
-            EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
-        End If
-        If InStr(UCase(Left(lcServerName, 20)), "S0305") > 0 Then
-            EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
-        End If
-        If InStr(UCase(Left(lcServerName, 20)), "S0307") > 0 Then
-            EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0320)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
-        End If
-        If InStr(UCase(Left(lcServerName, 20)), "LOCALHOST") > 0 Then
-            EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0320)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
-            'EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
-            'EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
+    'Private Function EBDB_CS(Optional lcDatabase As String = "EBDB", Optional lcUserID As String = "inap", Optional lcUserPW As String = "inap") As String
+    '    EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
+    '    Dim lcServerName As String = Get_Server_Name()
+    '    If InStr(UCase(Left(lcServerName, 20)), "DRWEB") > 0 Then
+    '        EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
+    '    End If
+    '    If InStr(UCase(Left(lcServerName, 20)), "S0305") > 0 Then
+    '        EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
+    '    End If
+    '    If InStr(UCase(Left(lcServerName, 20)), "S0307") > 0 Then
+    '        EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0320)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
+    '    End If
+    '    If InStr(UCase(Left(lcServerName, 20)), "LOCALHOST") > 0 Then
+    '        EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0320)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
+    '        'EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
+    '        'EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=S0344)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=" + lcDatabase + ")));User Id=" + lcUserID + ";Password=" + lcUserPW + ";"
 
 
+    '    End If
+    'End Function
+
+    Function EBDB_CS() As String
+        EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=testdb)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ebdb)));User Id=inap;Password=inap;"
+        Dim env = ConfigurationManager.AppSettings("ENV")
+        If env = "PROD" Then
+            EBDB_CS = "Provider=OraOLEDB.Oracle;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=scan-eskan)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=ebdb)));User Id=inap;Password=inap;"
         End If
     End Function
+
 
     Private Function ICBS_CS(Optional lcDatabase As String = "") As String
         Select Case UCase(lcDatabase)

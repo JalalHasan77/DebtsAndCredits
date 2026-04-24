@@ -184,10 +184,7 @@
 
 
             calculateColumn(colIndex);
-           //updateRowProfit(rowIndex);
-            //alert('rowIndex :' + rowIndex + 'colIndex: ' + colIndex);
             iterateRowCells(rowIndex);
-           // iterateColumnCells(colIndex);
 
         }
 

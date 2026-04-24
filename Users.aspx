@@ -1,4 +1,4 @@
-﻿<%@ Page Language="VB" AutoEventWireup="true" Codefile="MainPage.aspx.vb" Inherits="MainPage"%>
+﻿<%@ Page Language="VB" AutoEventWireup="true" Codefile="Users.aspx.vb" Inherits="Users"%>
 <%@ Register assembly="ServerControl1" namespace="ServerControl1" tagprefix="cc1" %>
 
 <!DOCTYPE html>
@@ -128,31 +128,7 @@
         .auto-style4 {
             direction: ltr;
         }
-
         </style>
-
-    <script type="text/javascript">
-        function getSelectedElement(Select,ToTextBox) {
-            //var e = document.getElementById("Select1");
-            //var strUser = e.value;
-            var e = document.getElementById(Select);
-            var strUser = e.options[e.selectedIndex].text;
-
-           // var txt = document.getElementById("TextBox2");
-            if (strUser != 'From') {
-                document.getElementById(ToTextBox).disabled = true;
-            }
-            else
-            {
-                document.getElementById(ToTextBox).disabled = false;
-            }
-           // alert(strUser);
-        }
- 
-   </script>
-
-
-
 </head>
 <body style="margin: 0px;">
     <form id="form1" runat="server">
@@ -179,8 +155,29 @@
                                     <td style="width: 20%; vertical-align: top; text-align: center;" class="auto-style4">
                                         <asp:Button ID="Button1" runat="server" Text="Button" />
                                     </td>
-                                    <td style="width: 60%">
-                                        <asp:Label ID="Label2" runat="server" Text="Label"></asp:Label>
+                                    <td style="width: 60%;display:flex;flex-direction:row">
+                                    
+                                    
+<asp:GridView ID="GridView1" runat="server"
+    AutoGenerateColumns="False"
+    DataKeyNames="ID"
+    OnRowDataBound="GridView1_RowDataBound">
+    <Columns>
+        <asp:BoundField DataField="ID" HeaderText="ID" />
+        <asp:BoundField DataField="NAME" HeaderText="NAME" />
+
+        <asp:TemplateField HeaderText="STATUS">
+            <ItemTemplate>
+                <asp:CheckBox ID="CheckBox1"
+                    runat="server"
+                    AutoPostBack="True"
+                    OnCheckedChanged="CheckBox1_CheckedChanged" />
+            </ItemTemplate>
+        </asp:TemplateField>
+    </Columns>
+</asp:GridView>
+                                    
+                                    
                                     </td>
                                     <td style="width: 20%; vertical-align: top;">
                                         &nbsp;</td>
@@ -189,6 +186,45 @@
                         </td>
                      </tr>
                         </table>
+
+<script src='<%= ResolveUrl("~/Scripts/jquery-3.7.1.min.js") %>'></script>
+<script src='<%= ResolveUrl("~/Scripts/jquery.signalR-2.4.3.min.js") %>'></script>
+<script src='<%= ResolveUrl("~/signalr/hubs") %>'></script>
+
+<script type="text/javascript">
+    $(function () {
+        var hub = $.connection.usersHub;
+
+        hub.client.userStatusChanged = function (id, isChecked) {
+            var $row = $('#<%= GridView1.ClientID %> tr[data-id="' + id + '"]');
+
+            if ($row.length) {
+                if (isChecked) {
+                    $row.css({
+                        "background-color": "green",
+                        "color": "white"
+                    });
+                } else {
+                    $row.css({
+                        "background-color": "white",
+                        "color": "black"
+                    });
+                }
+
+                $row.find('input[type=checkbox]').prop('checked', isChecked);
+            }
+        };
+
+        $.connection.hub.url = '<%= ResolveUrl("~/signalr") %>';
+        $.connection.hub.start()
+            .done(function () {
+                console.log('SignalR connected successfully.');
+            })
+            .fail(function (err) {
+                console.error('SignalR connection failed: ', err);
+            });
+    });
+</script>
 
 </form>
 </body>

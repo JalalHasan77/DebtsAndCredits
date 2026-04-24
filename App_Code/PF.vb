@@ -23,6 +23,10 @@ Public Module PF
         End Try
     End Function
 
+    Public Function getServerName() As String
+        Return System.Web.HttpContext.Current.Request.Url.Host
+    End Function
+
     Function getUserName(ByVal CurrentUser As String) As String
         Dim SQL As String = String.Empty
         SQL = SQL + "Select E.USER_Name as USER_NAME from EBLINKs_users E "
