@@ -8,24 +8,14 @@ Partial Class NewOrder
         'AddJQueryLinks(Page, True)
 
         If Not Page.IsPostBack Then
-            'Dim DT As New Data.DataTable
-            'DT = GetDataTable(InfoDB, "Select top 5 MemberName from Members ")
-            ''clTemp.lcObject = DT
-
-            'HttpContext.Current.Session("MyTable") = DT
-            'LoadFromObject()
             CreateInitialTable()
         End If
-
-        LoadVendorOptions()
 
         If Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then
             TextBox1.Text = hdnSelectedVendorText.Value
         End If
 
         LoadFromObject()
-
-
     End Sub
 
     Sub CreateInitialTable()
@@ -422,21 +412,6 @@ Partial Class NewOrder
         End Set
     End Property
 
-    Private Sub LoadVendorOptions()
-        Dim options As New List(Of OptionItem) From {
-            New OptionItem With {.OptionName = "Product Alpha", .OptionValue = "ALPHA"},
-            New OptionItem With {.OptionName = "Product Beta", .OptionValue = "BETA"},
-            New OptionItem With {.OptionName = "Product Gamma", .OptionValue = "GAMMA"}
-        }
-
-        rptVendorOptions.DataSource = options
-        rptVendorOptions.DataBind()
-    End Sub
-
-    Public Class OptionItem
-        Public Property OptionName As String
-        Public Property OptionValue As String
-    End Class
 
 End Class
 

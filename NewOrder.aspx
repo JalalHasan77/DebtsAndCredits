@@ -75,38 +75,23 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 420px;
+            width: 760px;
+            max-width: 95%;
             background-color: #ffffff;
             border-radius: 8px;
             box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-            padding: 30px;
+            padding: 15px;
             z-index: 1001;
         }
 
-        #vendorModalDialog h3 {
-            margin-top: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        .option-link {
-            display: block;
-            padding: 10px 14px;
-            margin: 6px 0;
-            background: #f0f4ff;
-            border-radius: 5px;
-            text-decoration: none;
-            color: #333;
-            font-family: Arial, sans-serif;
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-        .option-link:hover {
-            background: #d0dcff;
+        #vendorPopupFrame {
+            width: 100%;
+            height: 450px;
+            border: none;
         }
 
         .btn-close {
-            margin-top: 16px;
+            margin-top: 12px;
             padding: 8px 18px;
             background: #cc0000;
             color: #fff;
@@ -119,18 +104,18 @@
 
     <script type="text/javascript">
 
-            function editCell(wrapper) {
-        var lbl = wrapper.querySelector("span");
+        function editCell(wrapper) {
+            var lbl = wrapper.querySelector("span");
             var txt = wrapper.querySelector("input");
-    
+
             if (txt.style.display === "inline") return;
-    
+
             lbl.style.display = "none";
             txt.style.display = "inline";
             txt.focus();
             txt.select();
         }
-    
+
         function saveCell(textbox) {
             var wrapper = textbox.closest(".cell-wrapper");
             var colIndex = wrapper.getAttribute("data-columnindex");
@@ -180,7 +165,7 @@
 
                 var colIndex = parseInt(cellWrapper.getAttribute("data-columnindex"));
 
-    
+
                 // ✅ Skip first 4 columns
                 if (colIndex <= 3) return;
 
@@ -194,11 +179,11 @@
                 }
                 else if (input && input.value.trim() !== "") {
                     value = parseFloat(input.value) || 0;
-                  
+
                 }
-                
+
                 if (value != 0) {
-                   // alert(value);
+                    // alert(value);
                     var cellWrapper2 = document.querySelector(
                         ".cell-wrapper[data-headercol='" + colIndex + "'][data-headerlevel='1']"
                     );
@@ -213,7 +198,7 @@
                     }
 
                     if (value2 != 0) {
-                      //  alert('Net profit' + value * value2);
+                        //  alert('Net profit' + value * value2);
                         MasterTotalProfit = MasterTotalProfit + value * value2;
                     }
                 }
@@ -253,7 +238,7 @@
             columnCells.forEach(function (cellWrapper) {
 
                 var rowIndex = cellWrapper.getAttribute("data-rowindex");
-               
+
                 var span = cellWrapper.querySelector("span");
                 var input = cellWrapper.querySelector("input");
 
@@ -268,13 +253,13 @@
         }
 
 
-    
-    function handleEnter(e, textbox) {
-        if (e.key === "Enter") {
+
+        function handleEnter(e, textbox) {
+            if (e.key === "Enter") {
                 textbox.blur();
-            return false;
-        }
-        return true;
+                return false;
+            }
+            return true;
         }
 
         function saveHeader(textbox) {
@@ -301,7 +286,7 @@
             calculateColumn(colIndex);
 
             if (level == 1) {
-             iterateThroughAllCells()
+                iterateThroughAllCells()
             }
 
         }
@@ -320,8 +305,8 @@
                     iterateRowCells(rowIndex);
                 }
             })
-            }
-        
+        }
+
         function calculateColumn(colIndex) {
 
             var sum = 0;
@@ -337,7 +322,7 @@
                     sum += val;
                 }
             });
-    
+
             // Get price header
             var priceInput = document.querySelector(
                 ".cell-wrapper[data-columnindex='" + colIndex + "'][data-level='5'] input"
@@ -381,12 +366,14 @@
         }
 
         function openVendorDialog() {
+            document.getElementById('vendorPopupFrame').src = 'VendorPopup.aspx';
             document.getElementById('vendorModalOverlay').style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
 
         function closeVendorDialog() {
             document.getElementById('vendorModalOverlay').style.display = 'none';
+            document.getElementById('vendorPopupFrame').src = 'about:blank';
             document.body.style.overflow = '';
         }
 
@@ -401,7 +388,7 @@
 
         function vendorOverlayClicked(e) {
             if (e.target === document.getElementById('vendorModalOverlay')) {
-                // keep modal open when clicking backdrop
+                closeVendorDialog();
             }
         }
 
@@ -553,23 +540,7 @@
 
         <div id="vendorModalOverlay" onclick="vendorOverlayClicked(event);">
             <div id="vendorModalDialog">
-                <h3>&#10022; Select a Vendor</h3>
-
-                <a class="option-link" href="javascript:void(0);" onclick="receiveVendorValue('ALPHA', 'Product Alpha');">Product Alpha</a>
-                <a class="option-link" href="javascript:void(0);" onclick="receiveVendorValue('BETA', 'Product Beta');">Product Beta</a>
-                <a class="option-link" href="javascript:void(0);" onclick="receiveVendorValue('GAMMA', 'Product Gamma');">Product Gamma</a>
-
-                <hr />
-
-                <asp:Repeater ID="rptVendorOptions" runat="server">
-                    <ItemTemplate>
-                        <a class="option-link" href="javascript:void(0);"
-                           onclick="receiveVendorValue('<%# Eval("OptionValue") %>', '<%# Eval("OptionName") %>');">
-                            <%# Eval("OptionName") %>
-                        </a>
-                    </ItemTemplate>
-                </asp:Repeater>
-
+                <iframe id="vendorPopupFrame" src="about:blank"></iframe>
                 <br />
                 <button type="button" class="btn-close" onclick="closeVendorDialog();">&#10005; Cancel</button>
             </div>
