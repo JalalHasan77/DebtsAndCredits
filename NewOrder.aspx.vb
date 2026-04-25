@@ -35,15 +35,14 @@ Partial Class NewOrder
                                         "Select Vendor")
 
         VendorPopupHelper.RegisterVendorPopup(Me,
-                                        LinkButton6,
-                                        "VendorPopup.aspx",
-                                        600,
-                                        450,
-                                        VendorPopupHelper.PopupPlacement.Center,
-                                        hdnSelectedVendorValue,
-                                        hdnSelectedVendorText,
-                                        TextBox1,
-                                        "Select Vendor")
+                                        btnAddExpRdc,
+                                        "AddAdditionReduction.aspx",
+                                        600, 400,
+                                        PopupPlacement.Center,
+                                        hdnSelectedVendorValue0,
+                                        hdnSelectedVendorText0,
+                                        TextBox5,
+                                        "Select Adj")
 
 
     End Sub

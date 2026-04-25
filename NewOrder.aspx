@@ -4,6 +4,8 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
     <title></title>
+    <link rel="stylesheet" href="assets/jquery-ui-1.13.2.min.css" />
+    <link rel="stylesheet" href="assets/jquery.timepicker-1.3.5.min.css" />
     <style type="text/css">
         .auto-style2 {
             width: 100%;
@@ -310,7 +312,48 @@
                 );
             }
         }
+
+        function initializeDateTimePickers() {
+            var dateSelector = '#TextBox2';
+            var timeSelector = '#TextBox3';
+
+            if (window.jQuery) {
+                $(dateSelector).datepicker({
+                    dateFormat: 'yy-mm-dd',
+                    changeMonth: true,
+                    changeYear: true
+                });
+
+                $(timeSelector).timepicker({
+                    timeFormat: 'H:i',
+                    step: 1,
+                    scrollDefault: 'now'
+                });
+
+                var now = new Date();
+                var yyyy = now.getFullYear();
+                var mm = String(now.getMonth() + 1).padStart(2, '0');
+                var dd = String(now.getDate()).padStart(2, '0');
+                var hh = String(now.getHours()).padStart(2, '0');
+                var mi = String(now.getMinutes()).padStart(2, '0');
+
+                if (!$(dateSelector).val()) {
+                    $(dateSelector).val(yyyy + '-' + mm + '-' + dd);
+                }
+
+                if (!$(timeSelector).val()) {
+                    $(timeSelector).val(hh + ':' + mi);
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeDateTimePickers();
+        });
 </script>
+    <script src="assets/jquery-3.7.1.min.js"></script>
+    <script src="assets/jquery-ui-1.13.2.min.js"></script>
+    <script src="assets/jquery.timepicker-1.3.5.min.js"></script>
 
 </head>
 <body style="margin: 0px;">
@@ -375,12 +418,12 @@
         <span class="labelCol">
             <asp:Label ID="Label3" runat="server" Text="Date" Font-Names="Arial"></asp:Label>
         </span>
-        <asp:TextBox ID="TextBox2" runat="server" CssClass="txtbox" Width="150px"></asp:TextBox>
+        <asp:TextBox ID="TextBox2" runat="server" ClientIDMode="Static" CssClass="txtbox" Width="150px" placeholder="yyyy-MM-dd"></asp:TextBox>
 
         <span class="spacer"></span>
 
         <asp:Label ID="Label4" runat="server" Text="Time" Font-Names="Arial"></asp:Label>
-        <asp:TextBox ID="TextBox3" runat="server" CssClass="txtbox" Width="50px"></asp:TextBox>
+        <asp:TextBox ID="TextBox3" runat="server" ClientIDMode="Static" CssClass="txtbox" Width="90px" placeholder="HH:mm"></asp:TextBox>
     </div>
 
     <div class="row">
@@ -394,9 +437,12 @@
 </div>
                                         <br />
 <div class="row">
-    <asp:LinkButton ID="LinkButton5" runat="server" Font-Names="Arial" Font-Size="14px">
-        Add Other Expenses/Discounts
-    </asp:LinkButton>
+    <asp:LinkButton ID="btnAddExpRdc" runat="server" Font-Names="Arial" Font-Size="14px">
+        Add Other Expenses/Reduction</asp:LinkButton>
+    <br />
+        <asp:TextBox ID="TextBox5" runat="server" CssClass="txtbox" Width="300px" ReadOnly="true"></asp:TextBox>
+        <asp:HiddenField ID="hdnSelectedVendorValue0" runat="server" />
+        <asp:HiddenField ID="hdnSelectedVendorText0" runat="server" />
 </div>
 <br />
 <div class="row">
