@@ -7,13 +7,27 @@
     <title></title>
 
 <style type="text/css">
+    html, body, form {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    body {
+        background: transparent;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+    }
+
     .adj-card {
-        width: 460px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
         padding: 20px 22px;
-        border: 1px solid #d9e2ec;
-        border-radius: 12px;
+        border: none;
+        border-radius: 0;
         background: #ffffff;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+        box-shadow: none;
         font-family: Arial, sans-serif;
     }
 
@@ -116,24 +130,102 @@
         background: #d1d5db;
     }
 
-    .adj-field {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.adj-options-vertical {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
+    .adj-options-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
 </style>
 
+<script type="text/javascript">
+    function closeParentVendorPopup() {
+        if (window.parent && typeof window.parent.closeVendorDialog === 'function') {
+            window.parent.closeVendorDialog();
+        }
+        return false;
+    }
 
+    function getSelectedTypeValue() {
+        var reduction = document.getElementById('<%= RadioButton6.ClientID %>');
+        var addition = document.getElementById('<%= RadioButton7.ClientID %>');
+        var neutral = document.getElementById('<%= RadioButton8.ClientID %>');
 
+        if (reduction && reduction.checked) return 'Reduction';
+        if (addition && addition.checked) return 'Addition';
+        if (neutral && neutral.checked) return 'Neutral';
 
+        return '';
+    }
 
+    function setParentNewORder(value) {
+        if (!window.parent || !window.parent.document) return;
 
+        var parentDoc = window.parent.document;
+        var target = parentDoc.getElementById('NewORder');
+        var i;
+
+        if (!target) {
+            var inputs = parentDoc.getElementsByTagName('input');
+            for (i = 0; i < inputs.length; i++) {
+                if ((inputs[i].id && /NewORder$/i.test(inputs[i].id)) ||
+                    (inputs[i].name && /NewORder$/i.test(inputs[i].name))) {
+                    target = inputs[i];
+                    break;
+                }
+            }
+        }
+
+        if (!target) {
+            var selects = parentDoc.getElementsByTagName('select');
+            for (i = 0; i < selects.length; i++) {
+                if ((selects[i].id && /NewORder$/i.test(selects[i].id)) ||
+                    (selects[i].name && /NewORder$/i.test(selects[i].name))) {
+                    target = selects[i];
+                    break;
+                }
+            }
+        }
+
+        if (target) {
+            if (typeof target.value !== 'undefined') {
+                target.value = value;
+            } else {
+                target.innerHTML = value;
+            }
+        }
+    }
+
+    function addAdjustmentAndClose() {
+        var ddl = document.getElementById('<%= DropDownList2.ClientID %>');
+        var selectedValue = '';
+        var selectedText = '';
+        var selectedTypeValue = getSelectedTypeValue();
+
+        if (ddl) {
+            selectedValue = ddl.value || '';
+            if (ddl.selectedIndex >= 0) {
+                selectedText = ddl.options[ddl.selectedIndex].text || selectedValue;
+            }
+        }
+
+        if (selectedTypeValue !== '') {
+            setParentNewORder(selectedTypeValue);
+        }
+
+        if (window.parent) {
+            if (typeof window.parent.receiveVendorValue === 'function') {
+                window.parent.receiveVendorValue(selectedValue, selectedText);
+                return false;
+            }
+
+            if (typeof window.parent.closeVendorDialog === 'function') {
+                window.parent.closeVendorDialog();
+            }
+        }
+
+        return false;
+    }
+</script>
 
 </head>
 <body>
@@ -141,7 +233,6 @@
 <div class="adj-card">
     <div class="adj-title">Adjustment Details</div>
 
-    <!-- Row 1 -->
     <div class="adj-row">
         <div class="adj-label">
             <asp:Label ID="Label4" runat="server" Text="Adj. Name"></asp:Label>
@@ -155,7 +246,6 @@
         </div>
     </div>
 
-    <!-- Row 2 -->
     <div class="adj-row">
         <div class="adj-label">
             <asp:Label ID="Label5" runat="server" Text="Type"></asp:Label>
@@ -167,29 +257,26 @@
         </div>
     </div>
 
-    <!-- Row 3 -->
     <div class="adj-row">
-    <div class="adj-label">
-        <asp:Label ID="Label6" runat="server" Text="Amount"></asp:Label>
-    </div>
-
-    <div class="adj-field">
-        <div class="adj-options-vertical">
-            <asp:RadioButton ID="RadioButton9" runat="server" Text="Percentage" GroupName="AmountGroup" CssClass="adj-radio" />
-            <asp:RadioButton ID="RadioButton10" runat="server" Text="Fixed Amount" GroupName="AmountGroup" CssClass="adj-radio" />
+        <div class="adj-label">
+            <asp:Label ID="Label6" runat="server" Text="Amount"></asp:Label>
         </div>
 
-        <asp:TextBox ID="TextBox2" runat="server" CssClass="adj-textbox" Width="100px"></asp:TextBox>
-    </div>
-</div>
+        <div class="adj-field">
+            <div class="adj-options-vertical">
+                <asp:RadioButton ID="RadioButton9" runat="server" Text="Percentage" GroupName="AmountGroup" CssClass="adj-radio" />
+                <asp:RadioButton ID="RadioButton10" runat="server" Text="Fixed Amount" GroupName="AmountGroup" CssClass="adj-radio" />
+            </div>
 
-    <!-- Buttons -->
+            <asp:TextBox ID="TextBox2" runat="server" CssClass="adj-textbox" Width="100px"></asp:TextBox>
+        </div>
+    </div>
+
     <div class="adj-buttons">
-        <asp:Button ID="Button1" runat="server" Text="Add" CssClass="btn-modern btn-add" />
-        <asp:Button ID="Button2" runat="server" Text="Cancel" CssClass="btn-modern btn-cancel" />
+        <asp:Button ID="Button1" runat="server" Text="Add" CssClass="btn-modern btn-add" OnClick="Button1_Click" />
+        <asp:Button ID="Button2" runat="server" Text="Cancel" CssClass="btn-modern btn-cancel" OnClientClick="return closeParentVendorPopup();" UseSubmitBehavior="false" />
     </div>
 </div>
-
 
     </form>
 </body>
