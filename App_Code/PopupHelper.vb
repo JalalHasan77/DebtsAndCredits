@@ -516,6 +516,56 @@ Public Module VendorPopupHelper
         Return script.ToString()
     End Function
 
+    Public Sub RegisterPopupSelectionAndClose(ByVal page As Page,
+                                              ByVal selectedValue As String,
+                                              ByVal selectedText As String,
+                                              Optional ByVal additionalFieldKey As String = "",
+                                              Optional ByVal additionalFieldValue As String = "",
+                                              Optional ByVal startupScriptKey As String = "VendorPopupSelectionAndClose",
+                                              Optional ByVal skipPostBack As Boolean = True)
+
+        If page Is Nothing Then Throw New ArgumentNullException("page")
+
+        Dim script As String = BuildPopupSelectionAndCloseScript(selectedValue,
+                                                                 selectedText,
+                                                                 additionalFieldKey,
+                                                                 additionalFieldValue,
+                                                                 skipPostBack)
+
+        If ScriptManager.GetCurrent(page) IsNot Nothing Then
+            ScriptManager.RegisterStartupScript(page, page.GetType(), startupScriptKey, script, True)
+        Else
+            page.ClientScript.RegisterStartupScript(page.GetType(), startupScriptKey, script, True)
+        End If
+    End Sub
+
+    Private Function BuildPopupSelectionAndCloseScript(ByVal selectedValue As String,
+                                                       ByVal selectedText As String,
+                                                       ByVal additionalFieldKey As String,
+                                                       ByVal additionalFieldValue As String,
+                                                       ByVal skipPostBack As Boolean) As String
+        Dim sb As New StringBuilder()
+
+        sb.AppendLine("(function () {")
+        sb.AppendLine("    if (!window.parent) return;")
+        sb.AppendLine("")
+        sb.AppendLine("    if ('" & JsEncode(additionalFieldKey) & "' !== '' && typeof window.parent.vendorPopupPersistFieldValue === 'function') {")
+        sb.AppendLine("        window.parent.vendorPopupPersistFieldValue('" & JsEncode(additionalFieldKey) & "', '" & JsEncode(additionalFieldValue) & "');")
+        sb.AppendLine("    }")
+        sb.AppendLine("")
+        sb.AppendLine("    if (typeof window.parent.receiveVendorValue === 'function') {")
+        sb.AppendLine("        window.parent.receiveVendorValue('" & JsEncode(selectedValue) & "', '" & JsEncode(selectedText) & "', " & LCase(skipPostBack.ToString()) & ");")
+        sb.AppendLine("        return;")
+        sb.AppendLine("    }")
+        sb.AppendLine("")
+        sb.AppendLine("    if (typeof window.parent.closeVendorDialog === 'function') {")
+        sb.AppendLine("        window.parent.closeVendorDialog();")
+        sb.AppendLine("    }")
+        sb.AppendLine("})();")
+
+        Return sb.ToString()
+    End Function
+
     Private Function ResolvePopupUrl(ByVal page As Page, ByVal popupPageUrl As String) As String
         If popupPageUrl Is Nothing Then Return "about:blank"
 
