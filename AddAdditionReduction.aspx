@@ -6,7 +6,7 @@
 <head runat="server">
     <title></title>
 
-    <style type="text/css">
+<style type="text/css">
     .adj-card {
         width: 460px;
         padding: 20px 22px;
@@ -67,12 +67,6 @@
         width: 180px;
     }
 
-    .adj-options-vertical {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
     .adj-options-horizontal {
         display: flex;
         flex-wrap: wrap;
@@ -121,7 +115,24 @@
     .btn-cancel:hover {
         background: #d1d5db;
     }
+
+    .adj-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.adj-options-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 </style>
+
+
+
+
+
 
 
 </head>
@@ -158,17 +169,19 @@
 
     <!-- Row 3 -->
     <div class="adj-row">
-        <div class="adj-label">
-            <asp:Label ID="Label6" runat="server" Text="Amount"></asp:Label>
-        </div>
-        <div class="adj-options-vertical">
-            <div class="adj-options-horizontal">
-                <asp:RadioButton ID="RadioButton9" runat="server" Text="Percentage" GroupName="AmountGroup" CssClass="adj-radio" />
-                <asp:RadioButton ID="RadioButton10" runat="server" Text="Fixed Amount" GroupName="AmountGroup" CssClass="adj-radio" />
-            </div>
-            <asp:TextBox ID="TextBox2" runat="server" CssClass="adj-textbox"></asp:TextBox>
-        </div>
+    <div class="adj-label">
+        <asp:Label ID="Label6" runat="server" Text="Amount"></asp:Label>
     </div>
+
+    <div class="adj-field">
+        <div class="adj-options-vertical">
+            <asp:RadioButton ID="RadioButton9" runat="server" Text="Percentage" GroupName="AmountGroup" CssClass="adj-radio" />
+            <asp:RadioButton ID="RadioButton10" runat="server" Text="Fixed Amount" GroupName="AmountGroup" CssClass="adj-radio" />
+        </div>
+
+        <asp:TextBox ID="TextBox2" runat="server" CssClass="adj-textbox" Width="100px"></asp:TextBox>
+    </div>
+</div>
 
     <!-- Buttons -->
     <div class="adj-buttons">
