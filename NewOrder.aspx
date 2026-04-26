@@ -434,8 +434,7 @@
 
                                     </td>
                                     <td style="width: 60%;align-items:flex-start" >
-                                    <asp:Button ID="Button2" runat="server" Text="Button" />
-                                     <br />                                        <div class="outerBlock">
+                                        <div class="outerBlock">
 
     <div class="row">
         <span class="labelCol">
@@ -555,9 +554,13 @@
 
     <span style="display:inline-block; width:15px;"></span>
 
-    <asp:LinkButton ID="LinkButton4" runat="server" Font-Names="Arial" Font-Size="14px">
-        Add one Column
-    </asp:LinkButton>
+<asp:LinkButton ID="LinkButton4"
+                runat="server"
+                Font-Names="Arial"
+                Font-Size="14px"
+                OnClientClick="document.getElementById('<%= Button2.ClientID %>').click(); return false;">
+    Add one Column
+</asp:LinkButton>
 </div>
 
                                         <div style="display: flex;flex-direction: row; justify-content:flex-start">

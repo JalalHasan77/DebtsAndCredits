@@ -137,27 +137,27 @@ Partial Class NewOrder
     End Function
 
 
-    Protected Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-        'Dim DT As New Data.DataTable
-        'DT = CType(clTemp.lcObject, DataTable)
-        Dim dt As DataTable =
-        CType(HttpContext.Current.Session("MyTable"), DataTable)
+    'Protected Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+    '    'Dim DT As New Data.DataTable
+    '    'DT = CType(clTemp.lcObject, DataTable)
+    '    Dim dt As DataTable =
+    '    CType(HttpContext.Current.Session("MyTable"), DataTable)
 
-        Dim DC As New DataColumn
-        dt.Columns.Add(DC)
+    '    Dim DC As New DataColumn
+    '    dt.Columns.Add(DC)
 
-        clTemp.lcObject = dt
+    '    clTemp.lcObject = dt
 
-        HeaderLevel1.Add("Profit")
-        HeaderLevel2.Add("Total")
-        HeaderLevel3.Add("NoOfItems")
-        HeaderLevel4.Add("Item")
-        HeaderLevel5.Add("Price")
+    '    HeaderLevel1.Add("Profit")
+    '    HeaderLevel2.Add("Total")
+    '    HeaderLevel3.Add("NoOfItems")
+    '    HeaderLevel4.Add("Item")
+    '    HeaderLevel5.Add("Price")
 
 
-        LoadFromObject()
+    '    LoadFromObject()
 
-    End Sub
+    'End Sub
 
     Protected Sub GridView1_RowCreated(sender As Object, e As GridViewRowEventArgs)
 
@@ -519,11 +519,46 @@ Partial Class NewOrder
 
     Protected Sub lnkBtnAddMembers_Click(sender As Object, e As EventArgs) Handles lnkBtnAddMembers.Click
         Dim returnValue As Object = VendorPopupHelper.GetPopupReturnValue(Me, "SelectedMembers")
-        Dim L As New List(Of ListItem)
-        L = TryCast(returnValue, List(Of ListItem))
+        Dim L As List(Of ListItem) = TryCast(returnValue, List(Of ListItem))
 
+        If L Is Nothing OrElse L.Count = 0 Then Exit Sub
 
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Exit Sub
+
+        For Each li As ListItem In L
+            If li Is Nothing Then Continue For
+
+            ' Skip if member already exists
+            Dim exists As Boolean = dt.AsEnumerable().
+            Any(Function(r) r("ID").ToString() = li.Value)
+
+            If exists Then Continue For
+
+            Dim dr As DataRow = dt.NewRow()
+
+            For Each dc As DataColumn In dt.Columns
+                Select Case dc.ColumnName
+                    Case "ID"
+                        dr("ID") = li.Value              ' ListItem.Value
+                    Case "MemberName"
+                        dr("MemberName") = li.Text       ' ListItem.Text
+                    Case "Deposit", "Debt", "Profit"
+                        dr(dc.ColumnName) = "0.000"
+                    Case Else
+                        dr(dc.ColumnName) = ""
+                End Select
+            Next
+
+            dt.Rows.Add(dr)
+        Next
+
+        dt.AcceptChanges()
+        HttpContext.Current.Session("MyTable") = dt
+
+        LoadFromObject()
     End Sub
+
     Protected Sub ImageButton2_Click(sender As Object, e As ImageClickEventArgs)
 
     End Sub
@@ -549,6 +584,26 @@ Partial Class NewOrder
         LoadFromObject()
     End Sub
 
+    Protected Sub LinkButton4_Click(sender As Object, e As EventArgs) Handles LinkButton4.Click
+        'Dim DT As New Data.DataTable
+        'DT = CType(clTemp.lcObject, DataTable)
+        Dim dt As DataTable =
+        CType(HttpContext.Current.Session("MyTable"), DataTable)
+
+        Dim DC As New DataColumn
+        dt.Columns.Add(DC)
+
+        clTemp.lcObject = dt
+
+        HeaderLevel1.Add("Profit")
+        HeaderLevel2.Add("Total")
+        HeaderLevel3.Add("NoOfItems")
+        HeaderLevel4.Add("Item")
+        HeaderLevel5.Add("Price")
+
+
+        LoadFromObject()
+    End Sub
 End Class
 
 
