@@ -39,9 +39,6 @@ Partial Class NewOrder
                                       "AddAdditionReduction.aspx",
                                       600, 400,
                                       PopupPlacement.Center,
-                                      hdnSelectedVendorValue0,
-                                      hdnSelectedVendorText0,
-                                      TextBox5,
                                       "Select Adj",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
@@ -448,12 +445,25 @@ Partial Class NewOrder
 
         Dim selectedRow As DataRow = TryCast(returnValue, DataRow)
         If selectedRow Is Nothing Then Exit Sub
+        Dim DT As New DataTable
+        If ViewState("AddRdcTable") Is Nothing Then
+            ViewState("AddRdcTable") = selectedRow.Table.DefaultView
+            DT = TryCast(selectedRow.Table, DataTable)
+        Else
+            DT = TryCast(ViewState("AddRdcTable"), DataTable)
+            DT.Merge(TryCast(selectedRow.Table, DataTable))
 
-        GridView2.DataSource = selectedRow.Table.DefaultView
+        End If
+        DT.AcceptChanges()
+        ViewState("AddRdcTable") = DT
+
+
+        GridView2.DataSource = DT.DefaultView
         GridView2.DataBind()
 
-        TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
+        'TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
     End Sub
+
 End Class
 
 

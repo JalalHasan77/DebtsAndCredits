@@ -60,6 +60,41 @@
         .auto-style4 {
             direction: ltr;
         }
+
+            .exp-rdc-row {
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+    .exp-rdc-box {
+        display: inline-block;
+        text-align: left;
+    }
+
+    .exp-rdc-link {
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+
+    .exp-rdc-grid {
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .exp-rdc-grid .col-action {
+        width: 1%;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .exp-rdc-grid .col-80 {
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
+        text-align: center;
+    }
+
 </style>
 
     <script type="text/javascript">
@@ -436,28 +471,69 @@
 
 </div>
                                         <br />
-<div class="row">
-    <asp:LinkButton ID="btnAddExpRdc" runat="server" Font-Names="Arial" Font-Size="14px">
-        Add Other Expenses/Reduction</asp:LinkButton>
-    <br />
+<div class="row exp-rdc-row">
+    <div class="exp-rdc-box">
+        <asp:LinkButton ID="btnAddExpRdc"
+                        runat="server"
+                        CssClass="exp-rdc-link"
+                        Font-Names="Arial"
+                        Font-Size="14px">
+            Add Other Expenses/Reduction
+        </asp:LinkButton>
 
-                                        <asp:GridView ID="GridView2" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" Font-Size="12px">
-                                            <AlternatingRowStyle BackColor="White" />
-                                            <EditRowStyle BackColor="#2461BF" />
-                                            <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                                            <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                                            <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
-                                            <RowStyle BackColor="#EFF3FB" />
-                                            <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
-                                            <SortedAscendingCellStyle BackColor="#F5F7FB" />
-                                            <SortedAscendingHeaderStyle BackColor="#6D95E1" />
-                                            <SortedDescendingCellStyle BackColor="#E9EBEF" />
-                                            <SortedDescendingHeaderStyle BackColor="#4870BE" />
-                                        </asp:GridView>
-    <br />
-        <asp:TextBox ID="TextBox5" runat="server" CssClass="txtbox" Width="300px" ReadOnly="true"></asp:TextBox>
-        <asp:HiddenField ID="hdnSelectedVendorValue0" runat="server" />
-        <asp:HiddenField ID="hdnSelectedVendorText0" runat="server" />
+        <asp:GridView ID="GridView2"
+                      runat="server"
+                      CssClass="exp-rdc-grid"
+                      CellPadding="4"
+                      ForeColor="#333333"
+                      Font-Names="Arial"
+                      Font-Size="12px"
+                      AutoGenerateColumns="False">
+            <AlternatingRowStyle BackColor="White" />
+
+            <Columns>
+                <asp:TemplateField HeaderStyle-CssClass="col-action"
+                                   ItemStyle-CssClass="col-action">
+                    <ItemTemplate>
+                        <asp:ImageButton ID="ImageButton1"
+                                         runat="server"
+                                         ImageUrl="~/Images/Trash16x16.png" />
+                    </ItemTemplate>
+                </asp:TemplateField>
+
+                <asp:BoundField DataField="adjusmentName"
+                                HeaderText="Title"
+                                HeaderStyle-CssClass="col-80"
+                                ItemStyle-CssClass="col-80" />
+
+                <asp:BoundField DataField="adjusmentType"
+                                HeaderText="Inc or Dec"
+                                HeaderStyle-CssClass="col-80"
+                                ItemStyle-CssClass="col-80" />
+
+                <asp:BoundField DataField="adjusmentCalculation"
+                                HeaderText="Fixed or %"
+                                HeaderStyle-CssClass="col-80"
+                                ItemStyle-CssClass="col-80" />
+
+                <asp:BoundField DataField="CalculationAmount"
+                                HeaderText="Amount"
+                                HeaderStyle-CssClass="col-80"
+                                ItemStyle-CssClass="col-80" />
+            </Columns>
+
+            <EditRowStyle BackColor="#2461BF" />
+            <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+            <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+            <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
+            <RowStyle BackColor="#EFF3FB" />
+            <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
+            <SortedAscendingCellStyle BackColor="#F5F7FB" />
+            <SortedAscendingHeaderStyle BackColor="#6D95E1" />
+            <SortedDescendingCellStyle BackColor="#E9EBEF" />
+            <SortedDescendingHeaderStyle BackColor="#4870BE" />
+        </asp:GridView>
+    </div>
 </div>
 <br />
 <div class="row">

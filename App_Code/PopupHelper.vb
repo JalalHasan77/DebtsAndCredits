@@ -59,6 +59,40 @@ Public Module VendorPopupHelper
         triggerControl.Attributes("onclick") = clientScript
     End Sub
 
+    Public Sub RegisterVendorPopup(ByVal page As Page,
+                               ByVal triggerControl As WebControl,
+                               ByVal popupPageUrl As String,
+                               ByVal popupWidth As Integer,
+                               ByVal popupHeight As Integer,
+                               ByVal placement As PopupPlacement,
+                               Optional ByVal popupTitle As String = "Select Vendor",
+                               Optional ByVal displayMode As PopupDisplayMode = PopupDisplayMode.Standard)
+
+        If page Is Nothing Then Throw New ArgumentNullException("page")
+        If triggerControl Is Nothing Then Throw New ArgumentNullException("triggerControl")
+
+        RegisterVendorPopupStyles(page)
+        RegisterVendorPopupMarkup(page)
+        RegisterVendorPopupScript(page)
+
+        Dim resolvedUrl As String = ResolvePopupUrl(page, popupPageUrl)
+
+        Dim clientScript As String = BuildOpenDialogScript(
+        resolvedUrl,
+        popupTitle,
+        popupWidth,
+        popupHeight,
+        placement,
+        triggerControl.UniqueID,
+        "",
+        "",
+        "",
+        displayMode)
+
+        triggerControl.Attributes("onclick") = clientScript
+    End Sub
+
+
     Private Sub RegisterVendorPopupStyles(ByVal page As Page)
         If page.Items(StylesRegisteredKey) IsNot Nothing Then Exit Sub
 
