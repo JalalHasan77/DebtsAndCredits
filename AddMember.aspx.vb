@@ -5,20 +5,25 @@ Partial Class AddMember
     Protected Sub Page_Load(sender As Object, e As EventArgs) Handles Me.Load
         If Not Page.IsPostBack Then
             Dim DT As New Data.DataTable
-            DT = DB.GetDataTable(DB.InfoDB, "Select ID,MemberName from Members")
+            DT = DB.GetDataTable(DB.InfoDB, "Select ID,MemberName, NoOfMovement from Members order by cint(NoOfMovement) desc")
+            CheckBoxList1.Items.Clear()
+            For Each DR As Data.DataRow In DT.Rows
 
-            CheckBoxList1.DataSource = DT
-            CheckBoxList1.DataTextField = "MemberName"
-            CheckBoxList1.DataValueField = "ID"
-            CheckBoxList1.DataBind()
+                Dim item As New ListItem()
+                item.Text = DR("MemberName").ToString()   'display text
+                item.Value = DR("ID").ToString()          'main value
+                item.Attributes("NoOfMovement") = DR("NoOfMovement").ToString() 'third value
+
+                CheckBoxList1.Items.Add(item)
+            Next
 
         End If
     End Sub
     Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        Dim L As New List(Of String)
+        Dim L As New List(Of ListItem)
         For Each oneItem As ListItem In CheckBoxList1.Items
             If oneItem.Selected Then
-                L.Add(oneItem.Text)
+                L.Add(oneItem)
             End If
         Next
 
@@ -42,3 +47,4 @@ Partial Class AddMember
         End If
     End Sub
 End Class
+

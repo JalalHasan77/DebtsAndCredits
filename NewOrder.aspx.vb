@@ -491,14 +491,64 @@ Partial Class NewOrder
         'TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
     End Sub
 
+    Protected Sub GridView2_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView2.RowCommand
+        If e.CommandName <> "DeleteRow" Then Exit Sub
+
+        Dim dt As DataTable = TryCast(ViewState("AddRdcTable"), DataTable)
+        If dt Is Nothing Then Exit Sub
+
+        Dim rowIndex As Integer
+        If Not Integer.TryParse(Convert.ToString(e.CommandArgument), rowIndex) Then Exit Sub
+
+        If rowIndex >= 0 AndAlso rowIndex < dt.Rows.Count Then
+            dt.Rows.RemoveAt(rowIndex)
+            dt.AcceptChanges()
+        End If
+
+        If dt.Rows.Count = 0 Then
+            ViewState("AddRdcTable") = Nothing
+            GridView2.DataSource = Nothing
+        Else
+            ViewState("AddRdcTable") = dt
+            GridView2.DataSource = dt.DefaultView
+        End If
+
+        GridView2.DataBind()
+    End Sub
+
+
     Protected Sub lnkBtnAddMembers_Click(sender As Object, e As EventArgs) Handles lnkBtnAddMembers.Click
         Dim returnValue As Object = VendorPopupHelper.GetPopupReturnValue(Me, "SelectedMembers")
+        Dim L As New List(Of ListItem)
+        L = TryCast(returnValue, List(Of ListItem))
 
-        Dim L As New List(Of String)
-        L = TryCast(returnValue, List(Of String))
 
-        MsgBox(Join(L.ToArray, " "))
     End Sub
+    Protected Sub ImageButton2_Click(sender As Object, e As ImageClickEventArgs)
+
+    End Sub
+
+    Protected Sub GridView1_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView1.RowCommand
+        If e.CommandName <> "DeleteRow" Then Exit Sub
+
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Exit Sub
+
+        Dim rowId As String = Convert.ToString(e.CommandArgument)
+
+        Dim dr As DataRow =
+            dt.AsEnumerable().
+               FirstOrDefault(Function(r) Convert.ToString(r("ID")) = rowId)
+
+        If dr IsNot Nothing Then
+            dt.Rows.Remove(dr)
+            dt.AcceptChanges()
+            HttpContext.Current.Session("MyTable") = dt
+        End If
+
+        LoadFromObject()
+    End Sub
+
 End Class
 
 
@@ -517,20 +567,23 @@ Public Class ImageButtonTemplate
         imgBtn.ImageUrl = "~/Images/Trash16x16.png"
         imgBtn.CausesValidation = False
         imgBtn.ToolTip = "Delete"
+        imgBtn.CommandName = "DeleteRow"
 
-        AddHandler imgBtn.DataBinding, Sub(sender As Object, e As EventArgs)
-                                           Dim btn = CType(sender, ImageButton)
-                                           Dim row = CType(btn.NamingContainer, GridViewRow)
-                                           Dim idObj = DataBinder.Eval(row.DataItem, _idColumn)
-                                           Dim rowId As String = If(idObj Is DBNull.Value, "", idObj.ToString())
+        AddHandler imgBtn.DataBinding,
+            Sub(sender As Object, e As EventArgs)
+                Dim btn = CType(sender, ImageButton)
+                Dim row = CType(btn.NamingContainer, GridViewRow)
+                Dim idObj = DataBinder.Eval(row.DataItem, _idColumn)
+                Dim rowId As String = If(idObj Is DBNull.Value, "", idObj.ToString())
 
-                                           btn.CommandArgument = rowId
-                                           btn.Attributes("data-id") = rowId
-                                       End Sub
+                btn.CommandArgument = rowId
+                btn.Attributes("data-id") = rowId
+            End Sub
 
         container.Controls.Add(imgBtn)
     End Sub
 End Class
+
 
 Public Class EditableTemplate
     Implements ITemplate

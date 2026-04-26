@@ -482,57 +482,64 @@
         </asp:LinkButton>
 
         <asp:GridView ID="GridView2"
-                      runat="server"
-                      CssClass="exp-rdc-grid"
-                      CellPadding="4"
-                      ForeColor="#333333"
-                      Font-Names="Arial"
-                      Font-Size="12px"
-                      AutoGenerateColumns="False">
-            <AlternatingRowStyle BackColor="White" />
+              runat="server"
+              CssClass="exp-rdc-grid"
+              CellPadding="4"
+              ForeColor="#333333"
+              Font-Names="Arial"
+              Font-Size="12px"
+              AutoGenerateColumns="False"
+              OnRowCommand="GridView2_RowCommand">
+    <AlternatingRowStyle BackColor="White" />
 
-            <Columns>
-                <asp:TemplateField HeaderStyle-CssClass="col-action"
-                                   ItemStyle-CssClass="col-action">
-                    <ItemTemplate>
-                        <asp:ImageButton ID="ImageButton1"
-                                         runat="server"
-                                         ImageUrl="~/Images/Trash16x16.png" />
-                    </ItemTemplate>
-                </asp:TemplateField>
+    <Columns>
+        <asp:TemplateField HeaderStyle-CssClass="col-action"
+                           ItemStyle-CssClass="col-action">
+            <ItemTemplate>
+                <asp:ImageButton ID="ImageButton1"
+                                 runat="server"
+                                 ImageUrl="~/Images/Trash16x16.png"
+                                 CommandName="DeleteRow"
+                                 CommandArgument='<%# Container.DataItemIndex %>'
+                                 CausesValidation="False"
+                                 ToolTip="Delete" />
+            </ItemTemplate>
+        </asp:TemplateField>
 
-                <asp:BoundField DataField="adjusmentName"
-                                HeaderText="Title"
-                                HeaderStyle-CssClass="col-80"
-                                ItemStyle-CssClass="col-80" />
+        <asp:BoundField DataField="adjusmentName"
+                        HeaderText="Title"
+                        HeaderStyle-CssClass="col-80"
+                        ItemStyle-CssClass="col-80" />
 
-                <asp:BoundField DataField="adjusmentType"
-                                HeaderText="Inc or Dec"
-                                HeaderStyle-CssClass="col-80"
-                                ItemStyle-CssClass="col-80" />
+        <asp:BoundField DataField="adjusmentType"
+                        HeaderText="Inc or Dec"
+                        HeaderStyle-CssClass="col-80"
+                        ItemStyle-CssClass="col-80" />
 
-                <asp:BoundField DataField="adjusmentCalculation"
-                                HeaderText="Fixed or %"
-                                HeaderStyle-CssClass="col-80"
-                                ItemStyle-CssClass="col-80" />
+        <asp:BoundField DataField="adjusmentCalculation"
+                        HeaderText="Fixed or %"
+                        HeaderStyle-CssClass="col-80"
+                        ItemStyle-CssClass="col-80" />
 
-                <asp:BoundField DataField="CalculationAmount"
-                                HeaderText="Amount"
-                                HeaderStyle-CssClass="col-80"
-                                ItemStyle-CssClass="col-80" />
-            </Columns>
+        <asp:BoundField DataField="CalculationAmount"
+                        HeaderText="Amount"
+                        HeaderStyle-CssClass="col-80"
+                        ItemStyle-CssClass="col-80" />
+    </Columns>
 
-            <EditRowStyle BackColor="#2461BF" />
-            <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-            <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-            <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
-            <RowStyle BackColor="#EFF3FB" />
-            <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
-            <SortedAscendingCellStyle BackColor="#F5F7FB" />
-            <SortedAscendingHeaderStyle BackColor="#6D95E1" />
-            <SortedDescendingCellStyle BackColor="#E9EBEF" />
-            <SortedDescendingHeaderStyle BackColor="#4870BE" />
-        </asp:GridView>
+    <EditRowStyle BackColor="#2461BF" />
+    <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+    <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+    <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
+    <RowStyle BackColor="#EFF3FB" />
+    <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
+    <SortedAscendingCellStyle BackColor="#F5F7FB" />
+    <SortedAscendingHeaderStyle BackColor="#6D95E1" />
+    <SortedDescendingCellStyle BackColor="#E9EBEF" />
+    <SortedDescendingHeaderStyle BackColor="#4870BE" />
+</asp:GridView>
+
+
     </div>
 </div>
 <br />
@@ -560,7 +567,7 @@
                                             <Columns>
                                                 <asp:TemplateField>
                                                     <ItemTemplate>
-                                                        <asp:ImageButton ID="ImageButton2" runat="server" ImageUrl="~/Images/Trash16x16.png" />
+                                                        <asp:ImageButton ID="ImageButton2" runat="server" ImageUrl="~/Images/Trash16x16.png" OnClick="ImageButton2_Click" />
                                                     </ItemTemplate>
                                                 </asp:TemplateField>
                                                 <asp:BoundField DataField="MemberName" />
