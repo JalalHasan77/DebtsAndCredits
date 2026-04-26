@@ -55,7 +55,7 @@ Partial Class NewOrder
 
     Sub CreateInitialTable()
         Dim DT As New Data.DataTable
-        DT = GetDataTable(InfoDB, " SELECT ID,MemberName,'0.000' as Deposit, '0.000' as Debt,'0.000' as Profit  FROM Members WHERE MemberName IN (" &
+        DT = GetDataTable(InfoDB, " SELECT ID, MemberName,'0.000' as Deposit, '0.000' as Debt,'0.000' as Profit  FROM Members WHERE MemberName IN (" &
     "'Fatima AlHaddad'," &
     "'Fatima Mohammed'," &
     "'Elmeera'," &
@@ -78,25 +78,13 @@ Partial Class NewOrder
         CType(HttpContext.Current.Session("MyTable"), DataTable)
 
 
-        If Session("HeaderLevel1") Is Nothing Then
-            HeaderLevel1 = Enumerable.Repeat("Profit", dt.Columns.Count).ToList()
-        End If
+        Dim visibleColumnCount As Integer = Math.Max(dt.Columns.Count - 1, 0)
 
-        If Session("HeaderLevel2") Is Nothing Then
-            HeaderLevel2 = Enumerable.Repeat("Total", dt.Columns.Count).ToList()
-        End If
-
-        If Session("HeaderLevel3") Is Nothing Then
-            HeaderLevel3 = Enumerable.Repeat("NoOfItems", dt.Columns.Count).ToList()
-        End If
-
-        If Session("HeaderLevel4") Is Nothing Then
-            HeaderLevel4 = Enumerable.Repeat("Item", dt.Columns.Count).ToList()
-        End If
-
-        If Session("HeaderLevel5") Is Nothing Then
-            HeaderLevel5 = Enumerable.Repeat("Price", dt.Columns.Count).ToList()
-        End If
+        HeaderLevel1 = EnsureHeaderList("HeaderLevel1", "Profit", visibleColumnCount)
+        HeaderLevel2 = EnsureHeaderList("HeaderLevel2", "Total", visibleColumnCount)
+        HeaderLevel3 = EnsureHeaderList("HeaderLevel3", "NoOfItems", visibleColumnCount)
+        HeaderLevel4 = EnsureHeaderList("HeaderLevel4", "Item", visibleColumnCount)
+        HeaderLevel5 = EnsureHeaderList("HeaderLevel5", "Price", visibleColumnCount)
 
         BuildGrid(dt)
     End Sub
@@ -118,8 +106,17 @@ Partial Class NewOrder
     Private Sub BuildGrid(ByVal DT As DataTable)
 
         GridView1.Columns.Clear()
+
+        Dim actionField As New TemplateField()
+        actionField.ItemStyle.HorizontalAlign = HorizontalAlign.Center
+        actionField.ItemStyle.Width = Unit.Pixel(35)
+        actionField.ItemTemplate = New ImageButtonTemplate("ID")
+        GridView1.Columns.Add(actionField)
+
         Dim colIndex As Integer = 0
         For Each dc As DataColumn In DT.Columns
+            If dc.ColumnName = "ID" Then Continue For
+
             Dim tf As New TemplateField()
             tf.ItemTemplate = New EditableTemplate(dc.ColumnName, colIndex)
             GridView1.Columns.Add(tf)
@@ -179,7 +176,14 @@ Partial Class NewOrder
             For i As Integer = 0 To colCount - 1
 
                 If i = 0 Then
-                    ' Member column (span 4 rows)
+                    Dim cell As New TableCell()
+                    cell.Text = ""
+                    cell.RowSpan = 5
+                    cell.HorizontalAlign = HorizontalAlign.Center
+                    cell.VerticalAlign = VerticalAlign.Middle
+                    h1.Cells.Add(cell)
+
+                ElseIf i = 1 Then
                     Dim cell As New TableCell()
                     cell.Text = "Member"
                     cell.RowSpan = 5
@@ -187,24 +191,21 @@ Partial Class NewOrder
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
 
-                ElseIf i = 1 Then
-                    ' Deposit column (span 4 rows)
+                ElseIf i = 2 Then
                     Dim cell As New TableCell()
                     cell.Text = "Deposit"
                     cell.RowSpan = 5
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
-                ElseIf i = 2 Then
-                    ' Deposit column (span 4 rows)
+                ElseIf i = 3 Then
                     Dim cell As New TableCell()
                     cell.Text = "Debit"
                     cell.RowSpan = 5
                     cell.HorizontalAlign = HorizontalAlign.Center
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
-                ElseIf i = 3 Then
-                    ' Deposit column (span 4 rows)
+                ElseIf i = 4 Then
                     Dim cell As New TableCell()
                     cell.Text = "Profit"
                     cell.RowSpan = 5
@@ -212,8 +213,7 @@ Partial Class NewOrder
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
                 Else
-                    ' Only LAST column gets grouped headers
-                    h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i), i, 1))
+                    h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i - 1), i - 1, 1))
                 End If
 
             Next
@@ -225,8 +225,8 @@ Partial Class NewOrder
             Dim h2 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
 
             ' Only for grouped column(s)
-            For i As Integer = 4 To colCount - 1
-                h2.Cells.Add(CreateEditableHeaderCell(HeaderLevel2(i), i, 2))
+            For i As Integer = 5 To colCount - 1
+                h2.Cells.Add(CreateEditableHeaderCell(HeaderLevel2(i - 1), i - 1, 2))
             Next
 
 
@@ -234,8 +234,8 @@ Partial Class NewOrder
             ' THIRD HEADER ROW
             '========================
             Dim h3 As New GridViewRow(2, 0, DataControlRowType.Header, DataControlRowState.Insert)
-            For i As Integer = 4 To colCount - 1
-                h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i), i, 3))
+            For i As Integer = 5 To colCount - 1
+                h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i - 1), i - 1, 3))
             Next
 
 
@@ -243,8 +243,8 @@ Partial Class NewOrder
             ' FOURTH HEADER ROW
             '========================
             Dim h4 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
-            For i As Integer = 4 To colCount - 1
-                h4.Cells.Add(CreateEditableHeaderCell(HeaderLevel4(i), i, 4))
+            For i As Integer = 5 To colCount - 1
+                h4.Cells.Add(CreateEditableHeaderCell(HeaderLevel4(i - 1), i - 1, 4))
             Next
 
 
@@ -252,8 +252,8 @@ Partial Class NewOrder
             ' Fifthe HEADER ROW
             '========================
             Dim h5 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
-            For i As Integer = 4 To colCount - 1
-                h5.Cells.Add(CreateEditableHeaderCell(HeaderLevel5(i), i, 5))
+            For i As Integer = 5 To colCount - 1
+                h5.Cells.Add(CreateEditableHeaderCell(HeaderLevel5(i - 1), i - 1, 5))
             Next
 
 
@@ -294,6 +294,25 @@ Partial Class NewOrder
         End If
 
     End Sub
+
+    Private Function EnsureHeaderList(sessionKey As String, defaultValue As String, requiredCount As Integer) As List(Of String)
+        Dim list As List(Of String) = TryCast(Session(sessionKey), List(Of String))
+
+        If list Is Nothing Then
+            list = Enumerable.Repeat(defaultValue, requiredCount).ToList()
+        Else
+            While list.Count < requiredCount
+                list.Add(defaultValue)
+            End While
+
+            If list.Count > requiredCount Then
+                list = list.Take(requiredCount).ToList()
+            End If
+        End If
+
+        Session(sessionKey) = list
+        Return list
+    End Function
 
     Private Function CreateEditableHeaderCell(text As String, colIndex As Integer, level As Integer) As TableCell
 
@@ -482,6 +501,36 @@ Partial Class NewOrder
     End Sub
 End Class
 
+
+Public Class ImageButtonTemplate
+    Implements ITemplate
+
+    Private ReadOnly _idColumn As String
+
+    Public Sub New(idColumn As String)
+        _idColumn = idColumn
+    End Sub
+
+    Public Sub InstantiateIn(container As Control) Implements ITemplate.InstantiateIn
+        Dim imgBtn As New ImageButton()
+        imgBtn.ID = "ImageButton2"
+        imgBtn.ImageUrl = "~/Images/Trash16x16.png"
+        imgBtn.CausesValidation = False
+        imgBtn.ToolTip = "Delete"
+
+        AddHandler imgBtn.DataBinding, Sub(sender As Object, e As EventArgs)
+                                           Dim btn = CType(sender, ImageButton)
+                                           Dim row = CType(btn.NamingContainer, GridViewRow)
+                                           Dim idObj = DataBinder.Eval(row.DataItem, _idColumn)
+                                           Dim rowId As String = If(idObj Is DBNull.Value, "", idObj.ToString())
+
+                                           btn.CommandArgument = rowId
+                                           btn.Attributes("data-id") = rowId
+                                       End Sub
+
+        container.Controls.Add(imgBtn)
+    End Sub
+End Class
 
 Public Class EditableTemplate
     Implements ITemplate
