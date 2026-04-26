@@ -8,6 +8,7 @@ Public Module VendorPopupHelper
     Private Const StylesRegisteredKey As String = "VendorPopupStylesRegistered"
     Private Const MarkupRegisteredKey As String = "VendorPopupMarkupRegistered"
     Private Const ScriptRegisteredKey As String = "VendorPopupScriptRegistered"
+    Private Const ReturnValueSessionKeyPrefix As String = "VendorPopupReturnValue:"
 
     Public Enum PopupPlacement
         Center
@@ -538,6 +539,83 @@ Public Module VendorPopupHelper
             page.ClientScript.RegisterStartupScript(page.GetType(), startupScriptKey, script, True)
         End If
     End Sub
+
+    Public Sub RegisterPopupSelectionAndClose(ByVal page As Page,
+                                              ByVal returnValue As Object,
+                                              Optional ByVal startupScriptKey As String = "VendorPopupSelectionAndClose",
+                                              Optional ByVal skipPostBack As Boolean = True)
+
+        If page Is Nothing Then Throw New ArgumentNullException("page")
+
+        SavePopupReturnValue(page, startupScriptKey, returnValue)
+
+        Dim script As String = BuildPopupCloseAndPostBackScript(skipPostBack)
+
+        If ScriptManager.GetCurrent(page) IsNot Nothing Then
+            ScriptManager.RegisterStartupScript(page, page.GetType(), startupScriptKey, script, True)
+        Else
+            page.ClientScript.RegisterStartupScript(page.GetType(), startupScriptKey, script, True)
+        End If
+    End Sub
+
+    Public Function GetPopupReturnValue(ByVal page As Page,
+                                        Optional ByVal startupScriptKey As String = "VendorPopupSelectionAndClose",
+                                        Optional ByVal clearAfterRead As Boolean = True) As Object
+
+        If page Is Nothing Then Throw New ArgumentNullException("page")
+
+        Dim sessionKey As String = BuildPopupReturnValueSessionKey(startupScriptKey)
+        Dim value As Object = Nothing
+
+        If page.Session IsNot Nothing Then
+            value = page.Session(sessionKey)
+            If clearAfterRead Then
+                page.Session.Remove(sessionKey)
+            End If
+        End If
+
+        Return value
+    End Function
+
+    Private Sub SavePopupReturnValue(ByVal page As Page,
+                                     ByVal startupScriptKey As String,
+                                     ByVal returnValue As Object)
+        If page Is Nothing OrElse page.Session Is Nothing Then Exit Sub
+
+        page.Session(BuildPopupReturnValueSessionKey(startupScriptKey)) = returnValue
+    End Sub
+
+    Private Function BuildPopupReturnValueSessionKey(ByVal startupScriptKey As String) As String
+        If String.IsNullOrWhiteSpace(startupScriptKey) Then
+            startupScriptKey = "VendorPopupSelectionAndClose"
+        End If
+
+        Return ReturnValueSessionKeyPrefix & startupScriptKey.Trim()
+    End Function
+
+    Private Function BuildPopupCloseAndPostBackScript(ByVal skipPostBack As Boolean) As String
+        Dim sb As New StringBuilder()
+
+        sb.AppendLine("(function () {")
+        sb.AppendLine("    if (!window.parent) return;")
+        sb.AppendLine("")
+        sb.AppendLine("    if (typeof window.parent.closeVendorDialog === 'function') {")
+        sb.AppendLine("        window.parent.closeVendorDialog();")
+        sb.AppendLine("    }")
+        sb.AppendLine("")
+        sb.AppendLine("    if (" & LCase(skipPostBack.ToString()) & ") {")
+        sb.AppendLine("        return;")
+        sb.AppendLine("    }")
+        sb.AppendLine("")
+        sb.AppendLine("    if (typeof window.parent.__doPostBack === 'function' &&")
+        sb.AppendLine("        window.parent.vendorPopupContext &&")
+        sb.AppendLine("        window.parent.vendorPopupContext.postBackId) {")
+        sb.AppendLine("        window.parent.__doPostBack(window.parent.vendorPopupContext.postBackId, '');")
+        sb.AppendLine("    }")
+        sb.AppendLine("})();")
+
+        Return sb.ToString()
+    End Function
 
     Private Function BuildPopupSelectionAndCloseScript(ByVal selectedValue As String,
                                                        ByVal selectedText As String,

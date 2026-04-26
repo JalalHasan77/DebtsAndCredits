@@ -441,6 +441,24 @@ Partial Class NewOrder
             Session("HeaderLevel5") = value
         End Set
     End Property
+    Protected Sub btnAddExpRdc_Click(sender As Object, e As EventArgs) Handles btnAddExpRdc.Click
+        Dim returnValue As Object = VendorPopupHelper.GetPopupReturnValue(Me, "AddAdjustmentAndClose")
+
+        If returnValue Is Nothing Then Exit Sub
+
+        Dim selectedRow As DataRow = TryCast(returnValue, DataRow)
+        If selectedRow Is Nothing Then Exit Sub
+
+        Dim selectedValue As String = Convert.ToString(selectedRow("SelectedValue"))
+        Dim selectedText As String = Convert.ToString(selectedRow("SelectedText"))
+        Dim adjustmentType As String = Convert.ToString(selectedRow("AdjustmentType"))
+        Dim amountType As String = Convert.ToString(selectedRow("AmountType"))
+        Dim amount As String = Convert.ToString(selectedRow("Amount"))
+
+        hdnSelectedVendorValue0.Value = selectedValue
+        hdnSelectedVendorText0.Value = selectedText
+        TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedText, adjustmentType, amountType, amount)
+    End Sub
 End Class
 
 
