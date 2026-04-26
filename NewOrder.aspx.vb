@@ -449,15 +449,10 @@ Partial Class NewOrder
         Dim selectedRow As DataRow = TryCast(returnValue, DataRow)
         If selectedRow Is Nothing Then Exit Sub
 
-        Dim selectedValue As String = Convert.ToString(selectedRow("SelectedValue"))
-        Dim selectedText As String = Convert.ToString(selectedRow("SelectedText"))
-        Dim adjustmentType As String = Convert.ToString(selectedRow("AdjustmentType"))
-        Dim amountType As String = Convert.ToString(selectedRow("AmountType"))
-        Dim amount As String = Convert.ToString(selectedRow("Amount"))
+        GridView2.DataSource = selectedRow.Table.DefaultView
+        GridView2.DataBind()
 
-        hdnSelectedVendorValue0.Value = selectedValue
-        hdnSelectedVendorText0.Value = selectedText
-        TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedText, adjustmentType, amountType, amount)
+        TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
     End Sub
 End Class
 

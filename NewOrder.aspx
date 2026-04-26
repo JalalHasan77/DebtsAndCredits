@@ -440,6 +440,21 @@
     <asp:LinkButton ID="btnAddExpRdc" runat="server" Font-Names="Arial" Font-Size="14px">
         Add Other Expenses/Reduction</asp:LinkButton>
     <br />
+
+                                        <asp:GridView ID="GridView2" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" Font-Size="12px">
+                                            <AlternatingRowStyle BackColor="White" />
+                                            <EditRowStyle BackColor="#2461BF" />
+                                            <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                                            <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                                            <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
+                                            <RowStyle BackColor="#EFF3FB" />
+                                            <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
+                                            <SortedAscendingCellStyle BackColor="#F5F7FB" />
+                                            <SortedAscendingHeaderStyle BackColor="#6D95E1" />
+                                            <SortedDescendingCellStyle BackColor="#E9EBEF" />
+                                            <SortedDescendingHeaderStyle BackColor="#4870BE" />
+                                        </asp:GridView>
+    <br />
         <asp:TextBox ID="TextBox5" runat="server" CssClass="txtbox" Width="300px" ReadOnly="true"></asp:TextBox>
         <asp:HiddenField ID="hdnSelectedVendorValue0" runat="server" />
         <asp:HiddenField ID="hdnSelectedVendorText0" runat="server" />

@@ -4,34 +4,25 @@ Partial Class AddAdditionReduction
     Inherits System.Web.UI.Page
 
     Protected Sub Button1_Click(ByVal sender As Object, ByVal e As EventArgs)
-        Dim selectedType As String = GetSelectedTypeValue()
-        Dim selectedValue As String = String.Empty
-        Dim selectedText As String = String.Empty
-        Dim amountType As String = GetSelectedAmountTypeValue()
-        Dim amount As String = If(TextBox2 Is Nothing, String.Empty, TextBox2.Text.Trim())
+        Dim adjusmentName As String = String.Empty
+        adjusmentName = DropDownList2.SelectedItem.Text
+        Dim adjusmentType As String = GetAdjusmentType()
+        Dim adjusmentCalculation As String = GetadjusmentCalculation()
+        Dim CalculationAmount As String = If(TextBox2 Is Nothing, String.Empty, TextBox2.Text.Trim())
 
-        If DropDownList2 IsNot Nothing Then
-            selectedValue = DropDownList2.SelectedValue
-            If DropDownList2.SelectedItem IsNot Nothing Then
-                selectedText = DropDownList2.SelectedItem.Text
-            Else
-                selectedText = selectedValue
-            End If
-        End If
+
 
         Dim returnTable As New DataTable("AdjustmentReturnValue")
-        returnTable.Columns.Add("SelectedValue", GetType(String))
-        returnTable.Columns.Add("SelectedText", GetType(String))
-        returnTable.Columns.Add("AdjustmentType", GetType(String))
-        returnTable.Columns.Add("AmountType", GetType(String))
-        returnTable.Columns.Add("Amount", GetType(String))
+        returnTable.Columns.Add("adjusmentName", GetType(String))
+        returnTable.Columns.Add("adjusmentType", GetType(String))
+        returnTable.Columns.Add("adjusmentCalculation", GetType(String))
+        returnTable.Columns.Add("CalculationAmount", GetType(String))
 
         Dim returnValue As DataRow = returnTable.NewRow()
-        returnValue("SelectedValue") = selectedValue
-        returnValue("SelectedText") = selectedText
-        returnValue("AdjustmentType") = selectedType
-        returnValue("AmountType") = amountType
-        returnValue("Amount") = amount
+        returnValue("adjusmentName") = adjusmentName
+        returnValue("adjusmentType") = adjusmentType
+        returnValue("adjusmentCalculation") = adjusmentCalculation
+        returnValue("CalculationAmount") = CalculationAmount
         returnTable.Rows.Add(returnValue)
 
         VendorPopupHelper.RegisterPopupSelectionAndClose(
@@ -39,17 +30,16 @@ Partial Class AddAdditionReduction
             returnValue:=returnValue,
             startupScriptKey:="AddAdjustmentAndClose",
             skipPostBack:=False)
-
     End Sub
 
-    Private Function GetSelectedTypeValue() As String
+    Private Function GetAdjusmentType() As String
         If RadioButton6.Checked Then Return "Reduction"
         If RadioButton7.Checked Then Return "Addition"
         If RadioButton8.Checked Then Return "Neutral"
         Return String.Empty
     End Function
 
-    Private Function GetSelectedAmountTypeValue() As String
+    Private Function GetadjusmentCalculation() As String
         If RadioButton9.Checked Then Return "Percentage"
         If RadioButton10.Checked Then Return "Fixed Amount"
         Return String.Empty
