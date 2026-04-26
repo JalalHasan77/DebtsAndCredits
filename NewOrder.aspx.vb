@@ -42,12 +42,20 @@ Partial Class NewOrder
                                       "Select Adj",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
+        VendorPopupHelper.RegisterVendorPopup(Me,
+                                      lnkBtnAddMembers,
+                                      "AddMember.aspx",
+                                      400,
+                                      600,
+                                      PopupPlacement.Center,
+                                      "Select Adj",
+                                      VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
     End Sub
 
     Sub CreateInitialTable()
         Dim DT As New Data.DataTable
-        DT = GetDataTable(InfoDB, " SELECT MemberName,'0.000' as Deposit, '0.000' as Debt,'0.000' as Profit  FROM Members WHERE MemberName IN (" &
+        DT = GetDataTable(InfoDB, " SELECT ID,MemberName,'0.000' as Deposit, '0.000' as Debt,'0.000' as Profit  FROM Members WHERE MemberName IN (" &
     "'Fatima AlHaddad'," &
     "'Fatima Mohammed'," &
     "'Elmeera'," &
@@ -464,6 +472,14 @@ Partial Class NewOrder
         'TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
     End Sub
 
+    Protected Sub lnkBtnAddMembers_Click(sender As Object, e As EventArgs) Handles lnkBtnAddMembers.Click
+        Dim returnValue As Object = VendorPopupHelper.GetPopupReturnValue(Me, "SelectedMembers")
+
+        Dim L As New List(Of String)
+        L = TryCast(returnValue, List(Of String))
+
+        MsgBox(Join(L.ToArray, " "))
+    End Sub
 End Class
 
 

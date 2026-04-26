@@ -537,8 +537,7 @@
 </div>
 <br />
 <div class="row">
-    <asp:LinkButton ID="LinkButton2" runat="server" Font-Names="Arial" Font-Size="14px">
-        Add Members
+    <asp:LinkButton ID="lnkBtnAddMembers" runat="server" Font-Names="Arial" Font-Size="14px">Add Members
     </asp:LinkButton>
 
     <span style="display:inline-block; width:15px;"></span>
@@ -559,6 +558,11 @@
                                         <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated" Font-Size="12px">
                                             <AlternatingRowStyle BackColor="White" />
                                             <Columns>
+                                                <asp:TemplateField>
+                                                    <ItemTemplate>
+                                                        <asp:ImageButton ID="ImageButton2" runat="server" ImageUrl="~/Images/Trash16x16.png" />
+                                                    </ItemTemplate>
+                                                </asp:TemplateField>
                                                 <asp:BoundField DataField="MemberName" />
                                                 <asp:TemplateField>
                                                         <ItemTemplate>
