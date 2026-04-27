@@ -444,6 +444,8 @@
         </span>
         <asp:TextBox ID="TextBox1" runat="server" CssClass="txtbox" Width="300px" ReadOnly="true"></asp:TextBox>
         <asp:Label ID="Label6" runat="server" Text="Label"></asp:Label>
+        <asp:Label ID="lblVendorText" runat="server" Text="Label"></asp:Label>
+        <asp:Label ID="lblVendorValue" runat="server" Text="Label"></asp:Label>
         <asp:HiddenField ID="hdnSelectedVendorValue" runat="server" />
         <asp:HiddenField ID="hdnSelectedVendorText" runat="server" />
     </div>

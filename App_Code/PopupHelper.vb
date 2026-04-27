@@ -53,7 +53,50 @@ Public Module VendorPopupHelper
             triggerControl.UniqueID,
             selectedVendorValueField.ClientID,
             selectedVendorTextField.ClientID,
+            "",
             displayTextBox.ClientID,
+            displayMode)
+
+        triggerControl.Attributes("onclick") = clientScript
+    End Sub
+
+    Public Sub RegisterVendorPopup(ByVal page As Page,
+                                   ByVal triggerControl As WebControl,
+                                   ByVal popupPageUrl As String,
+                                   ByVal popupWidth As Integer,
+                                   ByVal popupHeight As Integer,
+                                   ByVal placement As PopupPlacement,
+                                   ByVal selectedVendorValueField As HiddenField,
+                                   ByVal selectedVendorTextField As HiddenField,
+                                   ByVal displayValueLabel As Label,
+                                   ByVal displayTextLabel As Label,
+                                   Optional ByVal popupTitle As String = "Select Vendor",
+                                   Optional ByVal displayMode As PopupDisplayMode = PopupDisplayMode.Standard)
+
+        If page Is Nothing Then Throw New ArgumentNullException("page")
+        If triggerControl Is Nothing Then Throw New ArgumentNullException("triggerControl")
+        If selectedVendorValueField Is Nothing Then Throw New ArgumentNullException("selectedVendorValueField")
+        If selectedVendorTextField Is Nothing Then Throw New ArgumentNullException("selectedVendorTextField")
+        If displayValueLabel Is Nothing Then Throw New ArgumentNullException("displayValueLabel")
+        If displayTextLabel Is Nothing Then Throw New ArgumentNullException("displayTextLabel")
+
+        RegisterVendorPopupStyles(page)
+        RegisterVendorPopupMarkup(page)
+        RegisterVendorPopupScript(page)
+
+        Dim resolvedUrl As String = ResolvePopupUrl(page, popupPageUrl)
+
+        Dim clientScript As String = BuildOpenDialogScript(
+            resolvedUrl,
+            popupTitle,
+            popupWidth,
+            popupHeight,
+            placement,
+            triggerControl.UniqueID,
+            selectedVendorValueField.ClientID,
+            selectedVendorTextField.ClientID,
+            displayValueLabel.ClientID,
+            displayTextLabel.ClientID,
             displayMode)
 
         triggerControl.Attributes("onclick") = clientScript
@@ -84,6 +127,7 @@ Public Module VendorPopupHelper
         popupHeight,
         placement,
         triggerControl.UniqueID,
+        "",
         "",
         "",
         "",
@@ -245,7 +289,8 @@ Public Module VendorPopupHelper
         js.AppendLine("    postBackId: '',")
         js.AppendLine("    valueFieldId: '',")
         js.AppendLine("    textFieldId: '',")
-        js.AppendLine("    displayTextBoxId: '',")
+        js.AppendLine("    displayValueControlId: '',")
+        js.AppendLine("    displayTextControlId: '',")
         js.AppendLine("    displayMode: 'Standard'")
         js.AppendLine("};")
         js.AppendLine("")
@@ -386,7 +431,7 @@ Public Module VendorPopupHelper
         js.AppendLine("    return closeVendorDialog();")
         js.AppendLine("}")
         js.AppendLine("")
-        js.AppendLine("function openVendorDialog(popupUrl, popupTitle, popupWidth, popupHeight, placement, postBackId, valueFieldId, textFieldId, displayTextBoxId, displayMode) {")
+        js.AppendLine("function openVendorDialog(popupUrl, popupTitle, popupWidth, popupHeight, placement, postBackId, valueFieldId, textFieldId, displayValueControlId, displayTextControlId, displayMode) {")
         js.AppendLine("    var overlay = document.getElementById('vendorModalOverlay');")
         js.AppendLine("    var dialog = document.getElementById('vendorModalDialog');")
         js.AppendLine("    var title = document.getElementById('vendorModalTitle');")
@@ -397,7 +442,8 @@ Public Module VendorPopupHelper
         js.AppendLine("    vendorPopupContext.postBackId = postBackId || '';")
         js.AppendLine("    vendorPopupContext.valueFieldId = valueFieldId || '';")
         js.AppendLine("    vendorPopupContext.textFieldId = textFieldId || '';")
-        js.AppendLine("    vendorPopupContext.displayTextBoxId = displayTextBoxId || '';")
+        js.AppendLine("    vendorPopupContext.displayValueControlId = displayValueControlId || '';")
+        js.AppendLine("    vendorPopupContext.displayTextControlId = displayTextControlId || '';")
         js.AppendLine("    vendorPopupContext.displayMode = displayMode || 'Standard';")
         js.AppendLine("")
         js.AppendLine("    title.innerHTML = popupTitle || 'Select Vendor';")
@@ -441,7 +487,8 @@ Public Module VendorPopupHelper
         js.AppendLine("")
         js.AppendLine("    var valueField = vendorPopupGet(vendorPopupContext.valueFieldId);")
         js.AppendLine("    var textField = vendorPopupGet(vendorPopupContext.textFieldId);")
-        js.AppendLine("    var displayBox = vendorPopupGet(vendorPopupContext.displayTextBoxId);")
+        js.AppendLine("    var displayValueControl = vendorPopupGet(vendorPopupContext.displayValueControlId);")
+        js.AppendLine("    var displayTextControl = vendorPopupGet(vendorPopupContext.displayTextControlId);")
         js.AppendLine("")
         js.AppendLine("    if (vendorPopupContext.valueFieldId) {")
         js.AppendLine("        vendorPopupPersistFieldValue(vendorPopupContext.valueFieldId, selected);")
@@ -455,11 +502,15 @@ Public Module VendorPopupHelper
         js.AppendLine("        textField.value = text;")
         js.AppendLine("        if (textField.setAttribute) textField.setAttribute('value', text);")
         js.AppendLine("    }")
-        js.AppendLine("    if (vendorPopupContext.displayTextBoxId) {")
-        js.AppendLine("        vendorPopupPersistFieldValue(vendorPopupContext.displayTextBoxId, text);")
-        js.AppendLine("    } else if (displayBox) {")
-        js.AppendLine("        displayBox.value = text;")
-        js.AppendLine("        if (displayBox.setAttribute) displayBox.setAttribute('value', text);")
+        js.AppendLine("    if (vendorPopupContext.displayValueControlId) {")
+        js.AppendLine("        vendorPopupPersistFieldValue(vendorPopupContext.displayValueControlId, selected);")
+        js.AppendLine("    } else if (displayValueControl) {")
+        js.AppendLine("        vendorPopupAssignFieldValue(displayValueControl, selected);")
+        js.AppendLine("    }")
+        js.AppendLine("    if (vendorPopupContext.displayTextControlId) {")
+        js.AppendLine("        vendorPopupPersistFieldValue(vendorPopupContext.displayTextControlId, text);")
+        js.AppendLine("    } else if (displayTextControl) {")
+        js.AppendLine("        vendorPopupAssignFieldValue(displayTextControl, text);")
         js.AppendLine("    }")
         js.AppendLine("")
         js.AppendLine("    closeVendorDialog();")
@@ -518,7 +569,8 @@ Public Module VendorPopupHelper
                                            ByVal postBackUniqueId As String,
                                            ByVal selectedVendorValueClientId As String,
                                            ByVal selectedVendorTextClientId As String,
-                                           ByVal displayTextBoxClientId As String,
+                                           ByVal displayValueControlClientId As String,
+                                           ByVal displayTextControlClientId As String,
                                            ByVal displayMode As PopupDisplayMode) As String
 
         If popupWidth <= 0 Then popupWidth = 600
@@ -543,7 +595,9 @@ Public Module VendorPopupHelper
         script.Append("','")
         script.Append(JsEncode(selectedVendorTextClientId))
         script.Append("','")
-        script.Append(JsEncode(displayTextBoxClientId))
+        script.Append(JsEncode(displayValueControlClientId))
+        script.Append("','")
+        script.Append(JsEncode(displayTextControlClientId))
         script.Append("','")
         script.Append(displayMode.ToString())
         script.Append("');")

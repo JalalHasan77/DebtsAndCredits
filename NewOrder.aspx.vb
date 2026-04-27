@@ -24,15 +24,17 @@ Partial Class NewOrder
         LoadFromObject()
 
         VendorPopupHelper.RegisterVendorPopup(Me,
-                                        LinkButton3,
-                                        "VendorPopup.aspx",
-                                        760,
-                                        450,
-                                        VendorPopupHelper.PopupPlacement.Center,
-                                        hdnSelectedVendorValue,
-                                        hdnSelectedVendorText,
-                                        TextBox1,
-                                        "Select Vendor")
+                                      LinkButton3,
+                                      "VendorPopup.aspx",
+                                      760,
+                                      450,
+                                      VendorPopupHelper.PopupPlacement.Center,
+                                      hdnSelectedVendorValue,
+                                      hdnSelectedVendorText,
+                                      lblVendorValue,
+                                      lblVendorText,
+                                      "Select Vendor",
+                                      VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       btnAddExpRdc,
@@ -157,7 +159,7 @@ Partial Class NewOrder
 
     '    LoadFromObject()
 
-    'End Sub
+    '+End Sub
 
     Protected Sub GridView1_RowCreated(sender As Object, e As GridViewRowEventArgs)
 
