@@ -9,7 +9,7 @@ Imports System.Web.UI.HtmlControls
 Imports System.Web.UI.WebControls
 Partial Class NewOrder
     Inherits System.Web.UI.Page
-
+    Dim encryNdecry As New EncryDecry
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         'AddJQueryLinks(Page, True)
 
@@ -25,7 +25,7 @@ Partial Class NewOrder
 
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       LinkButton3,
-                                      "SelectOneItemFromList2columns.aspx",
+                                      "SelectOneItemFromListMultiColumns.aspx",
                                       450,
                                       760,
                                       VendorPopupHelper.PopupPlacement.Center,
@@ -386,9 +386,9 @@ Partial Class NewOrder
 
     Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
 
-        Dim dt As DataTable =
-        CType(HttpContext.Current.Session("MyTable"), DataTable)
+        'Dim A() As String {"A","B","C"}
 
+        'Dim B As String = encryNdecry.Encrypt(A()))
 
     End Sub
 

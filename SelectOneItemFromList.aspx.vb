@@ -31,8 +31,8 @@ Partial Class SelectOneItemFromList
             options.Add(New OptionItem With {.OptionName = DR("VenderName").ToString, .OptionValue = DR("ID").ToString})
         Next
 
-        rptVendorOptions.DataSource = options
-        rptVendorOptions.DataBind()
+        'rptVendorOptions.DataSource = options
+        'rptVendorOptions.DataBind()
     End Sub
 
     Public Class OptionItem

@@ -4,13 +4,21 @@ Imports System.Text
 Imports System.Web.UI
 Imports System.Web.UI.WebControls
 
-Partial Class SelectOneItemFromList2columns
+Partial Class SelectOneItemFromListMultiColumns
+    ' = Select One Item From a List (MultiColumns)
     Inherits System.Web.UI.Page
+    Dim EncryNDecry As New EncryDecry
 
-    Private Const SqlText As String = "Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders"
+    Private SqlText As String = "Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders"
 
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
         If Not IsPostBack Then
+            'The coming String is encrted and in form: SQL | Title
+            Dim bParameters() As String = {"Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders", "Select A Vender"}
+            Dim text As String = EncryNDecry.Encrypt(bParameters)
+            Dim Parameters() As String = EncryNDecry.DecryptToArray(text)
+            SqlText = Parameters(0)
+            Label1.Text = Parameters(1)
             LoadOptions()
         End If
     End Sub

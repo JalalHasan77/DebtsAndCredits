@@ -1,4 +1,4 @@
-<%@ Page Language="VB" AutoEventWireup="true" CodeFile="SelectOneItemFromList2columns.aspx.vb" Inherits="SelectOneItemFromList2columns" %>
+<%@ Page Language="VB" AutoEventWireup="true" CodeFile="SelectOneItemFromListMultiColumns.aspx.vb" Inherits="SelectOneItemFromListMultiColumns" %>
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -276,7 +276,8 @@
 <body onload="initializeSelectOneItemFromList();">
     <form id="form1" runat="server">
         <div class="select-card">
-            <div class="select-title">Select One Item From List</div>
+            <div class="select-title">
+    <asp:Label ID="Label1" runat="server" Text="Label"></asp:Label></div>
 
             <div class="select-search">
                 <asp:TextBox ID="TextBoxSearch" runat="server" CssClass="select-search-box" autocomplete="off" placeholder="Search in list..." onkeyup="filterItems();"></asp:TextBox>
