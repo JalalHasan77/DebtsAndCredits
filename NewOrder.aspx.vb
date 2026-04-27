@@ -25,9 +25,9 @@ Partial Class NewOrder
 
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       LinkButton3,
-                                      "SelectOneItemFromList.aspx",
-                                      760,
+                                      "SelectOneItemFromList2columns.aspx",
                                       450,
+                                      760,
                                       VendorPopupHelper.PopupPlacement.Center,
                                       hdnSelectedVendorValue,
                                       hdnSelectedVendorText,
