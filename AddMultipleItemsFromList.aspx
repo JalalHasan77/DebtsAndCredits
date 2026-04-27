@@ -60,30 +60,56 @@
         .members-scroll {
             flex: 1 1 auto;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: auto;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             background: #f8fafc;
-            padding: 12px 14px;
             box-sizing: border-box;
         }
 
-        .members-checklist {
+        .members-table {
             width: 100%;
+            min-width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
             font-size: 14px;
             color: #111827;
         }
 
-        .members-checklist td {
-            padding: 4px 0;
+        .members-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #e5eefc;
+            color: #1f2937;
+            text-align: left;
+            font-weight: 700;
+            padding: 10px 12px;
+            border-bottom: 1px solid #cbd5e1;
+            white-space: nowrap;
         }
 
-        .members-checklist input[type="checkbox"] {
-            margin-right: 8px;
+        .members-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+            word-break: break-word;
+            background: #ffffff;
         }
 
-        .members-checklist label {
-            color: #374151;
+        .members-table tbody tr:hover td {
+            background: #eef4ff;
+        }
+
+        .members-selector,
+        .members-selector-cell {
+            width: 42px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .members-selector-cell input[type="checkbox"] {
+            margin: 0;
         }
 
         .member-highlight {
@@ -92,6 +118,14 @@
             font-weight: 700;
             padding: 0 1px;
             border-radius: 3px;
+        }
+
+        .members-empty {
+            display: none;
+            padding: 18px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
         }
 
         .adj-buttons {
@@ -144,23 +178,16 @@
 
         function htmlEncode(value) {
             var div = document.createElement('div');
-            div.textContent = value;
+            div.textContent = value || '';
             return div.innerHTML;
         }
 
         function escapeRegExp(text) {
-            return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        function findParentRow(element) {
-            var node = element;
-            while (node && node.tagName !== 'TR') {
-                node = node.parentNode;
-            }
-            return node;
+            return (text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
 
         function buildHighlightedHtml(text, keyword) {
+            text = text || '';
             if (!keyword) {
                 return htmlEncode(text);
             }
@@ -171,7 +198,6 @@
 
             for (var i = 0; i < parts.length; i++) {
                 var part = parts[i];
-
                 if (part.toLowerCase() === keyword.toLowerCase()) {
                     html += '<span class="member-highlight">' + htmlEncode(part) + '</span>';
                 } else {
@@ -184,39 +210,49 @@
 
         function filterMembers() {
             var txt = document.getElementById('<%= TextBoxSearch.ClientID %>');
-            var list = document.getElementById('<%= CheckBoxList1.ClientID %>');
+            var table = document.getElementById('membersTable');
+            var empty = document.getElementById('emptyState');
 
-            if (!txt || !list) return;
+            if (!txt || !table || !table.tBodies.length) {
+                if (empty) {
+                    empty.style.display = 'block';
+                }
+                return;
+            }
 
             var keyword = txt.value.toLowerCase().trim();
-            var labels = list.getElementsByTagName('label');
+            var rows = table.tBodies[0].rows;
+            var visibleCount = 0;
 
-            for (var i = 0; i < labels.length; i++) {
-                var label = labels[i];
-                var originalText = label.getAttribute('data-original-text');
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+                var searchText = (row.getAttribute('data-searchtext') || '').toLowerCase();
+                var isMatch = keyword === '' || searchText.indexOf(keyword) > -1;
+                row.style.display = isMatch ? '' : 'none';
 
-                if (!originalText) {
-                    originalText = label.textContent || label.innerText || '';
-                    label.setAttribute('data-original-text', originalText);
+                var cells = row.querySelectorAll('td[data-original-text]');
+                for (var c = 0; c < cells.length; c++) {
+                    var original = cells[c].getAttribute('data-original-text') || '';
+                    cells[c].innerHTML = buildHighlightedHtml(original, isMatch ? keyword : '');
                 }
 
-                var row = findParentRow(label);
-                var textLower = originalText.toLowerCase();
-                var isMatch = (keyword === '' || textLower.indexOf(keyword) > -1);
-
-                if (row) {
-                    row.style.display = isMatch ? '' : 'none';
+                if (isMatch) {
+                    visibleCount++;
                 }
+            }
 
-                label.innerHTML = buildHighlightedHtml(originalText, isMatch ? keyword : '');
+            if (empty) {
+                empty.style.display = visibleCount === 0 ? 'block' : 'none';
             }
         }
     </script>
 </head>
-<body>
+<body onload="filterMembers();">
     <form id="form1" runat="server">
         <div class="adj-card">
-            <div class="adj-title">Members</div>
+            <div class="adj-title">
+                <asp:Label ID="Label1" runat="server"></asp:Label>
+            </div>
 
             <div class="members-search">
                 <asp:TextBox ID="TextBoxSearch"
@@ -227,11 +263,8 @@
             </div>
 
             <div class="members-scroll">
-                <asp:CheckBoxList ID="CheckBoxList1"
-                                  runat="server"
-                                  Font-Names="Arial"
-                                  CssClass="members-checklist">
-                </asp:CheckBoxList>
+                <asp:Literal ID="litMembersTable" runat="server"></asp:Literal>
+                <div id="emptyState" class="members-empty">No items found.</div>
             </div>
 
             <div class="adj-buttons">

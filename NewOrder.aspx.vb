@@ -23,9 +23,15 @@ Partial Class NewOrder
 
         LoadFromObject()
 
+
+
+        Dim arrSelectVendersParameters() As String = {"Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders", "Select A Vender"}
+        Dim SelectVendersParameters As String = encryNdecry.Encrypt(arrSelectVendersParameters)
+
+
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       LinkButton3,
-                                      "SelectOneItemFromListMultiColumns.aspx",
+                                      "SelectOneItemFromListMultiColumns.aspx?Parameters=" & SelectVendersParameters,
                                       450,
                                       760,
                                       VendorPopupHelper.PopupPlacement.Center,
@@ -44,9 +50,12 @@ Partial Class NewOrder
                                       "Select Adj",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
+        'Array: SQL to select Members, Title of the Page, HideID Y/N
+        Dim arrSelectMembersParameters() As String = {"Select ID, MemberName as [Name] from Members order by cint(NoOfMovement) desc", "Select Members", "N"}
+        Dim SelectMembersParameters As String = encryNdecry.Encrypt(arrSelectMembersParameters)
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       lnkBtnAddMembers,
-                                      "AddMultipleItemsFromList.aspx",
+                                      "AddMultipleItemsFromList.aspx?Parameters=" & SelectMembersParameters,
                                       400,
                                       600,
                                       PopupPlacement.Center,
