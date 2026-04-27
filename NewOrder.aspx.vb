@@ -25,7 +25,7 @@ Partial Class NewOrder
 
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       LinkButton3,
-                                      "VendorPopup.aspx",
+                                      "SelectOneItemFromList.aspx",
                                       760,
                                       450,
                                       VendorPopupHelper.PopupPlacement.Center,
