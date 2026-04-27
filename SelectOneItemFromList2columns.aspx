@@ -62,7 +62,7 @@
         .select-list-wrap {
             flex: 1 1 auto;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: auto;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
             background: #f8fafc;
@@ -71,8 +71,9 @@
 
         .select-table {
             width: 100%;
+            min-width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: auto;
             font-size: 14px;
             color: #111827;
         }
@@ -87,26 +88,14 @@
             font-weight: 700;
             padding: 10px 12px;
             border-bottom: 1px solid #cbd5e1;
+            white-space: nowrap;
         }
 
         .select-table td {
             padding: 10px 12px;
             border-bottom: 1px solid #e5e7eb;
             vertical-align: middle;
-            word-wrap: break-word;
-        }
-
-        .col-pick {
-            width: 56px;
-            text-align: center;
-        }
-
-        .col-name {
-            width: 48%;
-        }
-
-        .col-whatsapp {
-            width: 52%;
+            word-break: break-word;
         }
 
         .select-row {
@@ -223,20 +212,15 @@
             return html;
         }
 
-        function selectItemRow(row, id, name) {
+        function selectItemRow(row, value, text) {
             var rows = document.querySelectorAll('.select-row');
             for (var i = 0; i < rows.length; i++) {
                 rows[i].classList.remove('selected');
-                var cb = rows[i].querySelector('input[type="checkbox"]');
-                if (cb) cb.checked = false;
             }
 
             row.classList.add('selected');
-            var checkbox = row.querySelector('input[type="checkbox"]');
-            if (checkbox) checkbox.checked = true;
-
-            document.getElementById('<%= hdnSelectedValue.ClientID %>').value = id || '';
-            document.getElementById('<%= hdnSelectedText.ClientID %>').value = name || '';
+            document.getElementById('<%= hdnSelectedValue.ClientID %>').value = value || '';
+            document.getElementById('<%= hdnSelectedText.ClientID %>').value = text || '';
         }
 
         function filterItems() {
@@ -247,21 +231,19 @@
 
             for (var i = 0; i < rows.length; i++) {
                 var row = rows[i];
-                var name = row.getAttribute('data-name') || '';
-                var whatsapp = row.getAttribute('data-whatsapp') || '';
-                var isMatch = keyword === '' || name.toLowerCase().indexOf(keyword) > -1 || whatsapp.toLowerCase().indexOf(keyword) > -1;
+                var searchText = row.getAttribute('data-searchtext') || '';
+                var isMatch = keyword === '' || searchText.toLowerCase().indexOf(keyword) > -1;
+                row.style.display = isMatch ? '' : 'none';
 
-                row.style.display = isMatch ? '' : 'table-row';
-                if (!isMatch) {
-                    row.style.display = 'none';
+                var cells = row.querySelectorAll('td');
+                for (var c = 0; c < cells.length; c++) {
+                    var original = cells[c].getAttribute('data-original-text') || '';
+                    cells[c].innerHTML = buildHighlightedHtml(original, isMatch ? keyword : '');
                 }
 
-                var nameCell = row.querySelector('.cell-name');
-                var whatsappCell = row.querySelector('.cell-whatsapp');
-                if (nameCell) nameCell.innerHTML = buildHighlightedHtml(name, isMatch ? keyword : '');
-                if (whatsappCell) whatsappCell.innerHTML = buildHighlightedHtml(whatsapp, isMatch ? keyword : '');
-
-                if (isMatch) visibleCount++;
+                if (isMatch) {
+                    visibleCount++;
+                }
             }
 
             var empty = document.getElementById('emptyState');
@@ -297,36 +279,11 @@
             <div class="select-title">Select One Item From List</div>
 
             <div class="select-search">
-                <asp:TextBox ID="TextBoxSearch" runat="server" CssClass="select-search-box" autocomplete="off" placeholder="Search by name or WhatsApp..." onkeyup="filterItems();"></asp:TextBox>
+                <asp:TextBox ID="TextBoxSearch" runat="server" CssClass="select-search-box" autocomplete="off" placeholder="Search in list..." onkeyup="filterItems();"></asp:TextBox>
             </div>
 
             <div class="select-list-wrap">
-                <table class="select-table">
-                    <thead>
-                        <tr>
-                            <th class="col-pick">Pick</th>
-                            <th class="col-name">VenderName</th>
-                            <th class="col-whatsapp">Whatsapp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <asp:Repeater ID="rptOptions" runat="server">
-                            <ItemTemplate>
-                                <tr class="select-row"
-                                    data-id="<%# Server.HtmlEncode(Convert.ToString(Eval("OptionValue"))) %>"
-                                    data-name="<%# Server.HtmlEncode(Convert.ToString(Eval("OptionName"))) %>"
-                                    data-whatsapp="<%# Server.HtmlEncode(Convert.ToString(Eval("Whatsapp"))) %>"
-                                    onclick="selectItemRow(this, '<%# System.Web.HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("OptionValue"))) %>', '<%# System.Web.HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("OptionName"))) %>');">
-                                    <td class="col-pick">
-                                        <input type="checkbox" onclick="event.stopPropagation(); selectItemRow(this.closest('tr'), '<%# System.Web.HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("OptionValue"))) %>', '<%# System.Web.HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("OptionName"))) %>');" />
-                                    </td>
-                                    <td class="cell-name"><%# Server.HtmlEncode(Convert.ToString(Eval("OptionName"))) %></td>
-                                    <td class="cell-whatsapp"><%# Server.HtmlEncode(Convert.ToString(Eval("Whatsapp"))) %></td>
-                                </tr>
-                            </ItemTemplate>
-                        </asp:Repeater>
-                    </tbody>
-                </table>
+                <asp:GridView ID="gvOptions" runat="server" AutoGenerateColumns="true" CssClass="select-table" GridLines="None" ShowHeader="True"></asp:GridView>
                 <div id="emptyState" class="select-empty">No items found.</div>
             </div>
 
