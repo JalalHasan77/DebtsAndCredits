@@ -7,23 +7,63 @@ Imports System.Web.UI.WebControls
 
 Partial Class AddMultipleItemsFromList
     Inherits System.Web.UI.Page
-    Dim EncryNDecry As New EncryDecry
 
-
-    Private SqlText As String = ""
+    Private EncryNDecry As New EncryDecry()
     Private Const SessionDataKey As String = "AddMultipleItemsFromList_Data"
-    Private HideID As Boolean = True
+    Private Const ViewStateSqlTextKey As String = "AddMultipleItemsFromList_SqlText"
+    Private Const ViewStateHideMaskKey As String = "AddMultipleItemsFromList_HideColumnsMask"
+
+    Private Property SqlText As String
+        Get
+            Return Convert.ToString(ViewState(ViewStateSqlTextKey))
+        End Get
+        Set(value As String)
+            ViewState(ViewStateSqlTextKey) = value
+        End Set
+    End Property
+
+    Private Property HideColumnsMask As String
+        Get
+            Return Convert.ToString(ViewState(ViewStateHideMaskKey))
+        End Get
+        Set(value As String)
+            ViewState(ViewStateHideMaskKey) = NormalizeHideColumnsMask(value)
+        End Set
+    End Property
 
     Protected Sub Page_Load(sender As Object, e As EventArgs) Handles Me.Load
         If Not Page.IsPostBack Then
-            Dim arrParametres As String()
-            arrParametres = EncryNDecry.DecryptToArray(Request("Parameters"))
-            SqlText = arrParametres(0)
-            Label1.Text = arrParametres(1)
-            HideID = IIf(arrParametres(2).ToUpper = "Y", True, False)
-            LoadOptions(GetSelectedIdsFromRequest())
+            InitializeFromParameters()
         End If
 
+        LoadOptions(GetSelectedIdsFromRequest())
+    End Sub
+
+    Private Sub InitializeFromParameters()
+        Dim encryptedParameters As String = Request("Parameters")
+        Dim arrParametres As String() = Nothing
+
+        If Not String.IsNullOrEmpty(encryptedParameters) Then
+            arrParametres = EncryNDecry.DecryptToArray(encryptedParameters)
+        End If
+
+        If arrParametres IsNot Nothing AndAlso arrParametres.Length > 0 Then
+            SqlText = arrParametres(0)
+        Else
+            SqlText = String.Empty
+        End If
+
+        If arrParametres IsNot Nothing AndAlso arrParametres.Length > 1 Then
+            Label1.Text = arrParametres(1)
+        Else
+            Label1.Text = String.Empty
+        End If
+
+        If arrParametres IsNot Nothing AndAlso arrParametres.Length > 2 Then
+            HideColumnsMask = arrParametres(2)
+        Else
+            HideColumnsMask = String.Empty
+        End If
     End Sub
 
     Private Sub LoadOptions(ByVal selectedIds As HashSet(Of String))
@@ -41,7 +81,7 @@ Partial Class AddMultipleItemsFromList
 
         If dt IsNot Nothing Then
             For colIndex As Integer = 0 To dt.Columns.Count - 1
-                If HideID AndAlso colIndex = 0 Then
+                If IsColumnHidden(colIndex) Then
                     Continue For
                 End If
 
@@ -77,7 +117,7 @@ Partial Class AddMultipleItemsFromList
                 html.Append(" /></td>")
 
                 For colIndex As Integer = 0 To dt.Columns.Count - 1
-                    If HideID AndAlso colIndex = 0 Then
+                    If IsColumnHidden(colIndex) Then
                         Continue For
                     End If
 
@@ -101,14 +141,46 @@ Partial Class AddMultipleItemsFromList
     Private Function BuildSearchText(ByVal dr As DataRow) As String
         Dim sb As New StringBuilder()
 
-        For Each col As DataColumn In dr.Table.Columns
+        For colIndex As Integer = 0 To dr.Table.Columns.Count - 1
+            If IsColumnHidden(colIndex) Then
+                Continue For
+            End If
+
             If sb.Length > 0 Then
                 sb.Append(" ")
             End If
-            sb.Append(Convert.ToString(dr(col.ColumnName)))
+            sb.Append(Convert.ToString(dr(colIndex)))
         Next
 
         Return sb.ToString()
+    End Function
+
+    Private Function NormalizeHideColumnsMask(ByVal value As String) As String
+        If String.IsNullOrEmpty(value) Then
+            Return String.Empty
+        End If
+
+        Dim sb As New StringBuilder()
+
+        For Each ch As Char In value.Trim().ToUpperInvariant()
+            If ch = "Y"c OrElse ch = "N"c Then
+                sb.Append(ch)
+            End If
+        Next
+
+        Return sb.ToString()
+    End Function
+
+    Private Function IsColumnHidden(ByVal columnIndex As Integer) As Boolean
+        If String.IsNullOrEmpty(HideColumnsMask) Then
+            Return False
+        End If
+
+        If columnIndex < 0 OrElse columnIndex >= HideColumnsMask.Length Then
+            Return False
+        End If
+
+        Return HideColumnsMask(columnIndex) = "Y"c
     End Function
 
     Private Function GetSelectedIdsFromRequest() As HashSet(Of String)

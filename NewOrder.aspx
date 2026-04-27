@@ -550,9 +550,7 @@
 
     <span style="display:inline-block; width:15px;"></span>
 
-    <asp:LinkButton ID="LinkButton1" runat="server" Font-Names="Arial" Font-Size="14px">
-        Add one Item
-    </asp:LinkButton>
+    <asp:LinkButton ID="lnkBttnAddItems" runat="server" Font-Names="Arial" Font-Size="14px">Add Items</asp:LinkButton>
 
     <span style="display:inline-block; width:15px;"></span>
 

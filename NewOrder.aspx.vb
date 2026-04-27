@@ -51,7 +51,7 @@ Partial Class NewOrder
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
         'Array: SQL to select Members, Title of the Page, HideID Y/N
-        Dim arrSelectMembersParameters() As String = {"Select ID, MemberName as [Name] from Members order by cint(NoOfMovement) desc", "Select Members", "N"}
+        Dim arrSelectMembersParameters() As String = {"Select ID, MemberName as [Name] from Members order by cint(NoOfMovement) desc", "Select Members", "NN"}
         Dim SelectMembersParameters As String = encryNdecry.Encrypt(arrSelectMembersParameters)
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       lnkBtnAddMembers,
@@ -61,6 +61,9 @@ Partial Class NewOrder
                                       PopupPlacement.Center,
                                       "Select Adj",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
+
+
+
 
     End Sub
 
@@ -411,6 +414,32 @@ Partial Class NewOrder
         ' Add your vendor-related server-side logic here.
         ' Example:
         ' Label2.Text = "Selected vendor: " & selectedVendorText & " (" & selectedVendorValue & ")"
+
+
+        Dim SQL As String = " Select  "
+        SQL = SQL + vbCrLf + " Items.ID as ID , "
+        SQL = SQL + vbCrLf + " Items.Description As Title, "
+        SQL = SQL + vbCrLf + " VenderItems.Price AS Price, "
+        SQL = SQL + vbCrLf + " '0.0' AS Profit "
+        SQL = SQL + vbCrLf + " FROM "
+        SQL = SQL + vbCrLf + " Items "
+        SQL = SQL + vbCrLf + " INNER Join VenderItems ON Items.ID = VenderItems.ItemID "
+        SQL = SQL + vbCrLf + " WHERE "
+        SQL = SQL + vbCrLf + " VenderItems.VenderID = '" & selectedVendorValue & "'"
+
+        'Array: SQL to select items, Title of the Page, HideID Y/N
+        Dim arrSelectItemsParameters() As String = {SQL, "Select Items", "YNNN"}
+        Dim SelectItemsParameters As String = encryNdecry.Encrypt(arrSelectItemsParameters)
+        VendorPopupHelper.RegisterVendorPopup(Me,
+                                      lnkBttnAddItems,
+                                      "AddMultipleItemsFromList.aspx?Parameters=" & SelectItemsParameters,
+                                      600,
+                                      400,
+                                      PopupPlacement.Center,
+                                      "Select Adj",
+                                      VendorPopupHelper.PopupDisplayMode.FrameOnly)
+
+
     End Sub
     Protected Sub hfRowIndex_ValueChanged(sender As Object, e As EventArgs) Handles hfRowIndex.ValueChanged
         'MsgBox(hfRowIndex.Value)
