@@ -46,7 +46,7 @@ Partial Class NewOrder
 
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       lnkBtnAddMembers,
-                                      "AddMember.aspx",
+                                      "AddMultipleItemsFromList.aspx",
                                       400,
                                       600,
                                       PopupPlacement.Center,
