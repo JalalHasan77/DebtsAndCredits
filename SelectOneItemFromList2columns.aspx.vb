@@ -18,8 +18,30 @@ Partial Class SelectOneItemFromList2columns
     Private Sub LoadOptions()
         Dim dt As DataTable = DB.GetDataTable(DB.InfoDB, SqlText)
 
+        BuildGridColumns(dt)
         gvOptions.DataSource = dt
         gvOptions.DataBind()
+
+        If gvOptions.HeaderRow IsNot Nothing Then
+            gvOptions.UseAccessibleHeader = True
+            gvOptions.HeaderRow.TableSection = TableRowSection.TableHeader
+        End If
+    End Sub
+
+    Private Sub BuildGridColumns(ByVal dt As DataTable)
+        gvOptions.Columns.Clear()
+
+        If dt Is Nothing Then
+            Return
+        End If
+
+        For Each col As DataColumn In dt.Columns
+            Dim field As New BoundField()
+            field.DataField = col.ColumnName
+            field.HeaderText = col.ColumnName
+            field.HtmlEncode = False
+            gvOptions.Columns.Add(field)
+        Next
     End Sub
 
     Protected Sub gvOptions_RowDataBound(ByVal sender As Object, ByVal e As GridViewRowEventArgs) Handles gvOptions.RowDataBound
@@ -30,11 +52,10 @@ Partial Class SelectOneItemFromList2columns
         Dim drv As DataRowView = CType(e.Row.DataItem, DataRowView)
         Dim valueText As String = String.Empty
         Dim displayText As String = String.Empty
-        Dim searchText As New StringBuilder()
 
         If drv.DataView.Table.Columns.Count > 0 Then
             valueText = Convert.ToString(drv(0))
-            displayText = Convert.ToString(drv(Math.Min(1, drv.DataView.Table.Columns.Count - 1)))
+            displayText = BuildDisplayText(drv)
         End If
 
         e.Row.CssClass = "select-row"
@@ -45,6 +66,18 @@ Partial Class SelectOneItemFromList2columns
             cell.Attributes("data-original-text") = cell.Text.Replace("&nbsp;", String.Empty)
         Next
     End Sub
+
+    Private Function BuildDisplayText(ByVal drv As DataRowView) As String
+        If drv.DataView.Table.Columns.Count > 1 Then
+            Return Convert.ToString(drv(1))
+        End If
+
+        If drv.DataView.Table.Columns.Count > 0 Then
+            Return Convert.ToString(drv(0))
+        End If
+
+        Return String.Empty
+    End Function
 
     Private Function BuildSearchText(ByVal drv As DataRowView) As String
         Dim sb As New StringBuilder()

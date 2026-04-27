@@ -283,7 +283,7 @@
             </div>
 
             <div class="select-list-wrap">
-                <asp:GridView ID="gvOptions" runat="server" AutoGenerateColumns="true" CssClass="select-table" GridLines="None" ShowHeader="True"></asp:GridView>
+                <asp:GridView ID="gvOptions" runat="server" AutoGenerateColumns="False" CssClass="select-table" GridLines="None" ShowHeader="True"></asp:GridView>
                 <div id="emptyState" class="select-empty">No items found.</div>
             </div>
 
