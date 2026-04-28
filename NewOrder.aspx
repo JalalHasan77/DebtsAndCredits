@@ -501,31 +501,55 @@
                                  runat="server"
                                  ImageUrl="~/Images/Trash16x16.png"
                                  CommandName="DeleteRow"
-                                 CommandArgument='<%# Container.DataItemIndex %>'
+                                 CommandArgument='<%# Eval("__RowGuid") %>'
                                  CausesValidation="False"
                                  ToolTip="Delete" />
             </ItemTemplate>
+
+<HeaderStyle CssClass="col-action"></HeaderStyle>
+
+<ItemStyle CssClass="col-action"></ItemStyle>
         </asp:TemplateField>
 
         <asp:BoundField DataField="adjusmentName"
                         HeaderText="Title"
                         HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" />
+                        ItemStyle-CssClass="col-80" >
+
+<HeaderStyle CssClass="col-80"></HeaderStyle>
+
+<ItemStyle CssClass="col-80"></ItemStyle>
+        </asp:BoundField>
 
         <asp:BoundField DataField="adjusmentType"
                         HeaderText="Inc or Dec"
                         HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" />
+                        ItemStyle-CssClass="col-80" >
+
+<HeaderStyle CssClass="col-80"></HeaderStyle>
+
+<ItemStyle CssClass="col-80"></ItemStyle>
+        </asp:BoundField>
 
         <asp:BoundField DataField="adjusmentCalculation"
                         HeaderText="Fixed or %"
                         HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" />
+                        ItemStyle-CssClass="col-80" >
+
+<HeaderStyle CssClass="col-80"></HeaderStyle>
+
+<ItemStyle CssClass="col-80"></ItemStyle>
+        </asp:BoundField>
 
         <asp:BoundField DataField="CalculationAmount"
                         HeaderText="Amount"
                         HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" />
+                        ItemStyle-CssClass="col-80" >
+<HeaderStyle CssClass="col-80"></HeaderStyle>
+
+<ItemStyle CssClass="col-80"></ItemStyle>
+        </asp:BoundField>
+        <asp:BoundField DataField="Distrbution" HeaderText="Distribution" />
     </Columns>
 
     <EditRowStyle BackColor="#2461BF" />

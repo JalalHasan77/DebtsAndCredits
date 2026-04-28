@@ -768,28 +768,64 @@ Partial Class NewOrder
         End Set
     End Property
 
+    Private Const AddRdcRowKeyColumn As String = "__RowGuid"
+
+    Private Function EnsureAddRdcTable(table As DataTable) As DataTable
+        Dim dt As DataTable = table
+
+        If dt Is Nothing Then
+            dt = New DataTable()
+        End If
+
+        If Not dt.Columns.Contains(AddRdcRowKeyColumn) Then
+            dt.Columns.Add(AddRdcRowKeyColumn, GetType(String))
+        End If
+
+        Return dt
+    End Function
+
+    Private Function CreateAddRdcTableFromSource(source As DataTable) As DataTable
+        Dim dt As DataTable = If(source IsNot Nothing, source.Clone(), New DataTable())
+        Return EnsureAddRdcTable(dt)
+    End Function
+
+    Private Sub BindAddRdcGrid(dt As DataTable)
+        If dt Is Nothing OrElse dt.Rows.Count = 0 Then
+            ViewState("AddRdcTable") = Nothing
+            GridView2.DataSource = Nothing
+        Else
+            dt.AcceptChanges()
+            ViewState("AddRdcTable") = dt
+            GridView2.DataSource = dt.DefaultView
+        End If
+
+        GridView2.DataBind()
+    End Sub
+
     Protected Sub btnAddExpRdc_Click(sender As Object, e As EventArgs) Handles btnAddExpRdc.Click
         Dim returnValue As Object = VendorPopupHelper.GetPopupReturnValue(Me, "AddAdjustmentAndClose")
-
         If returnValue Is Nothing Then Exit Sub
 
         Dim selectedRow As DataRow = TryCast(returnValue, DataRow)
         If selectedRow Is Nothing Then Exit Sub
-        Dim DT As New DataTable
-        If ViewState("AddRdcTable") Is Nothing Then
-            ViewState("AddRdcTable") = selectedRow.Table.DefaultView
-            DT = TryCast(selectedRow.Table, DataTable)
+
+        Dim dt As DataTable = TryCast(ViewState("AddRdcTable"), DataTable)
+        If dt Is Nothing Then
+            dt = CreateAddRdcTableFromSource(selectedRow.Table)
         Else
-            DT = TryCast(ViewState("AddRdcTable"), DataTable)
-            DT.Merge(TryCast(selectedRow.Table, DataTable))
-
+            dt = EnsureAddRdcTable(dt)
         End If
-        DT.AcceptChanges()
-        ViewState("AddRdcTable") = DT
 
+        Dim newRow As DataRow = dt.NewRow()
+        For Each col As DataColumn In selectedRow.Table.Columns
+            If dt.Columns.Contains(col.ColumnName) Then
+                newRow(col.ColumnName) = selectedRow(col.ColumnName)
+            End If
+        Next
+        newRow(AddRdcRowKeyColumn) = Guid.NewGuid().ToString("N")
+        dt.Rows.Add(newRow)
 
-        GridView2.DataSource = DT.DefaultView
-        GridView2.DataBind()
+        BindAddRdcGrid(dt)
 
         'TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
     End Sub
@@ -799,24 +835,16 @@ Partial Class NewOrder
 
         Dim dt As DataTable = TryCast(ViewState("AddRdcTable"), DataTable)
         If dt Is Nothing Then Exit Sub
+        dt = EnsureAddRdcTable(dt)
 
-        Dim rowIndex As Integer
-        If Not Integer.TryParse(Convert.ToString(e.CommandArgument), rowIndex) Then Exit Sub
+        Dim rowKey As String = Convert.ToString(e.CommandArgument)
+        If String.IsNullOrWhiteSpace(rowKey) Then Exit Sub
 
-        If rowIndex >= 0 AndAlso rowIndex < dt.Rows.Count Then
-            dt.Rows.RemoveAt(rowIndex)
-            dt.AcceptChanges()
-        End If
+        Dim dr As DataRow = dt.AsEnumerable().FirstOrDefault(Function(r) String.Equals(Convert.ToString(r(AddRdcRowKeyColumn)), rowKey, StringComparison.Ordinal))
+        If dr Is Nothing Then Exit Sub
 
-        If dt.Rows.Count = 0 Then
-            ViewState("AddRdcTable") = Nothing
-            GridView2.DataSource = Nothing
-        Else
-            ViewState("AddRdcTable") = dt
-            GridView2.DataSource = dt.DefaultView
-        End If
-
-        GridView2.DataBind()
+        dt.Rows.Remove(dr)
+        BindAddRdcGrid(dt)
     End Sub
 
 

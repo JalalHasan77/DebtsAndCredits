@@ -2,6 +2,13 @@
 
 Partial Class AddAdditionReduction
     Inherits System.Web.UI.Page
+    Dim encryNdecry As New EncryDecry
+
+
+    Protected Sub Page_Load(sender As Object, e As EventArgs) Handles Me.Load
+        If Not Page.IsPostBack Then
+        End If
+    End Sub
 
     Protected Sub Button1_Click(ByVal sender As Object, ByVal e As EventArgs)
         Dim adjusmentName As String = String.Empty
@@ -9,7 +16,7 @@ Partial Class AddAdditionReduction
         Dim adjusmentType As String = GetAdjusmentType()
         Dim adjusmentCalculation As String = GetadjusmentCalculation()
         Dim CalculationAmount As String = If(TextBox2 Is Nothing, String.Empty, TextBox2.Text.Trim())
-
+        Dim Distrbution As String = GetadDistributionMethod()
 
 
         Dim returnTable As New DataTable("AdjustmentReturnValue")
@@ -17,12 +24,14 @@ Partial Class AddAdditionReduction
         returnTable.Columns.Add("adjusmentType", GetType(String))
         returnTable.Columns.Add("adjusmentCalculation", GetType(String))
         returnTable.Columns.Add("CalculationAmount", GetType(String))
+        returnTable.Columns.Add("Distrbution", GetType(String))
 
         Dim returnValue As DataRow = returnTable.NewRow()
         returnValue("adjusmentName") = adjusmentName
         returnValue("adjusmentType") = adjusmentType
         returnValue("adjusmentCalculation") = adjusmentCalculation
         returnValue("CalculationAmount") = CalculationAmount
+        returnValue("Distrbution") = Distrbution
         returnTable.Rows.Add(returnValue)
 
         VendorPopupHelper.RegisterPopupSelectionAndClose(
@@ -45,6 +54,12 @@ Partial Class AddAdditionReduction
         Return String.Empty
     End Function
 
+    Private Function GetadDistributionMethod() As String
+        If RadioButton1.Checked Then Return "Equally"
+        If RadioButton2.Checked Then Return "By Percentage"
+        Return String.Empty
+    End Function
+
     Protected Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         Dim script As String = "(function () {" &
                        "    if (window.parent && typeof window.parent.closeVendorDialog === 'function') {" &
@@ -58,4 +73,5 @@ Partial Class AddAdditionReduction
             Me.ClientScript.RegisterStartupScript(Me.GetType(), "ClosePopupOnly", script, True)
         End If
     End Sub
+
 End Class

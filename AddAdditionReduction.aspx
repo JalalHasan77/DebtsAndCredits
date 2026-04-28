@@ -191,6 +191,17 @@
         </div>
     </div>
 
+        <div class="adj-row">
+        <div class="adj-label">
+            <asp:Label ID="Label1" runat="server" Text="Distributed"></asp:Label>
+        </div>
+        <div class="adj-field adj-options-horizontal">
+            <asp:RadioButton ID="RadioButton1" runat="server" Text="Equally" GroupName="distributedGroup" CssClass="adj-radio" />
+            <asp:RadioButton ID="RadioButton2" runat="server" Text="By %" GroupName="distributedGroup" CssClass="adj-radio" />
+        </div>
+    </div>
+
+
     <div class="adj-buttons">
         <asp:Button ID="Button1" runat="server" Text="Add" CssClass="btn-modern btn-add" OnClick="Button1_Click" />
         <asp:Button ID="Button2" runat="server" Text="Cancel" CssClass="btn-modern btn-cancel" OnClientClick="return closeParentVendorPopup();" UseSubmitBehavior="false" />
