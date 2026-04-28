@@ -10,18 +10,21 @@ Imports System.Web.UI.WebControls
 Partial Class NewOrder
     Inherits System.Web.UI.Page
     Dim encryNdecry As New EncryDecry
-    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
-        'AddJQueryLinks(Page, True)
 
-        If Not Page.IsPostBack Then
+    Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
+        If HttpContext.Current.Session("MyTable") Is Nothing Then
             CreateInitialTable()
         End If
+
+        LoadFromObject()
+    End Sub
+
+    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        'AddJQueryLinks(Page, True)
 
         If Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then
             TextBox1.Text = hdnSelectedVendorText.Value
         End If
-
-        LoadFromObject()
 
 
 
@@ -189,6 +192,27 @@ Partial Class NewOrder
 
             Dim colCount As Integer = GridView1.Columns.Count
 
+            Dim hasDynamicColumns As Boolean = (colCount > 5)
+            Dim h0 As GridViewRow = Nothing
+
+            If hasDynamicColumns Then
+                h0 = New GridViewRow(-1, 0, DataControlRowType.Header, DataControlRowState.Insert)
+
+                For i As Integer = 0 To colCount - 1
+                    If i <= 4 Then
+                        Dim spacerCell As New TableCell()
+                        spacerCell.Text = "&nbsp;"
+                        spacerCell.HorizontalAlign = HorizontalAlign.Center
+                        spacerCell.VerticalAlign = VerticalAlign.Middle
+                        spacerCell.Height = Unit.Pixel(24)
+                        spacerCell.BackColor = Drawing.Color.WhiteSmoke
+                        h0.Cells.Add(spacerCell)
+                    Else
+                        h0.Cells.Add(CreateDeleteHeaderCell(i - 1))
+                    End If
+                Next
+            End If
+
             '========================
             ' FIRST HEADER ROW
             '========================
@@ -278,11 +302,18 @@ Partial Class NewOrder
             Next
 
 
-            table.Rows.AddAt(0, h1)
-            table.Rows.AddAt(1, h2)
-            table.Rows.AddAt(2, h3)
-            table.Rows.AddAt(3, h4)
-            table.Rows.AddAt(4, h5)
+            Dim insertRowIndex As Integer = 0
+
+            If hasDynamicColumns AndAlso h0 IsNot Nothing Then
+                table.Rows.AddAt(insertRowIndex, h0)
+                insertRowIndex += 1
+            End If
+
+            table.Rows.AddAt(insertRowIndex, h1)
+            table.Rows.AddAt(insertRowIndex + 1, h2)
+            table.Rows.AddAt(insertRowIndex + 2, h3)
+            table.Rows.AddAt(insertRowIndex + 3, h4)
+            table.Rows.AddAt(insertRowIndex + 4, h5)
 
         End If
 
@@ -402,6 +433,87 @@ Partial Class NewOrder
 
     End Function
 
+    Private Function CreateDeleteHeaderCell(colIndex As Integer) As TableCell
+        Dim cell As New TableCell()
+        cell.Width = Unit.Pixel(100)
+        cell.HorizontalAlign = HorizontalAlign.Center
+        cell.VerticalAlign = VerticalAlign.Middle
+        cell.BackColor = Drawing.Color.WhiteSmoke
+        cell.Height = Unit.Pixel(24)
+        cell.Style("padding") = "2px 0px"
+
+        Dim imgBtn As New ImageButton()
+        imgBtn.ID = "imgDeleteColumn_" & colIndex.ToString()
+        imgBtn.ImageUrl = GetTrashImageUrl()
+        imgBtn.CausesValidation = False
+        imgBtn.ToolTip = "Delete this column"
+        imgBtn.AlternateText = "Delete column"
+        imgBtn.CommandName = "DeleteDynamicColumn"
+        imgBtn.CommandArgument = colIndex.ToString()
+        imgBtn.OnClientClick = "return confirm('Delete this column?');"
+
+        cell.Controls.Add(imgBtn)
+        Return cell
+    End Function
+
+    Private Function GetTrashImageUrl() As String
+        Dim preferredVirtualPath As String = "~/Image/Trash16x16.png"
+        Dim fallbackVirtualPath As String = "~/Images/Trash16x16.png"
+
+        Try
+            Dim preferredPhysicalPath As String = Server.MapPath(preferredVirtualPath)
+            If System.IO.File.Exists(preferredPhysicalPath) Then
+                Return preferredVirtualPath
+            End If
+        Catch
+        End Try
+
+        Return fallbackVirtualPath
+    End Function
+
+    Private Sub RemoveDynamicColumn(headerColumnIndex As Integer)
+        If headerColumnIndex < 4 Then Exit Sub
+
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Exit Sub
+
+        Dim dataColumnIndex As Integer = headerColumnIndex + 1
+        If dataColumnIndex < 0 OrElse dataColumnIndex >= dt.Columns.Count Then Exit Sub
+        If dataColumnIndex <= 4 Then Exit Sub
+
+        dt.Columns.RemoveAt(dataColumnIndex)
+        dt.AcceptChanges()
+        HttpContext.Current.Session("MyTable") = dt
+        clTemp.lcObject = dt
+
+        Dim level1 = HeaderLevel1
+        Dim level2 = HeaderLevel2
+        Dim level3 = HeaderLevel3
+        Dim level4 = HeaderLevel4
+        Dim level5 = HeaderLevel5
+
+        RemoveHeaderValue(level1, headerColumnIndex)
+        RemoveHeaderValue(level2, headerColumnIndex)
+        RemoveHeaderValue(level3, headerColumnIndex)
+        RemoveHeaderValue(level4, headerColumnIndex)
+        RemoveHeaderValue(level5, headerColumnIndex)
+
+        HeaderLevel1 = level1
+        HeaderLevel2 = level2
+        HeaderLevel3 = level3
+        HeaderLevel4 = level4
+        HeaderLevel5 = level5
+
+        LoadFromObject()
+    End Sub
+
+    Private Sub RemoveHeaderValue(values As List(Of String), index As Integer)
+        If values Is Nothing Then Exit Sub
+        If index < 0 OrElse index >= values.Count Then Exit Sub
+
+        values.RemoveAt(index)
+    End Sub
+
 
     Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
 
@@ -412,15 +524,6 @@ Partial Class NewOrder
     End Sub
 
     Protected Sub LinkButton3_Click(sender As Object, e As EventArgs) Handles LinkButton3.Click
-        'Dim selectedVendorValue As String = hdnSelectedVendorValue.Value
-        'Dim selectedVendorText As String = hdnSelectedVendorText.Value
-
-        'TextBox1.Text = selectedVendorText
-        'Label6.Text = hdnSelectedVendorText.Value
-
-        ' Add your vendor-related server-side logic here.
-        ' Example:
-        ' Label2.Text = "Selected vendor: " & selectedVendorText & " (" & selectedVendorValue & ")"
 
         Dim selectedItems As List(Of Dictionary(Of String, Object)) =
                    TryCast(VendorPopupHelper.GetPopupReturnValue(Me, "SelectedItems"),
@@ -632,6 +735,14 @@ Partial Class NewOrder
     End Sub
 
     Protected Sub GridView1_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView1.RowCommand
+        If e.CommandName = "DeleteDynamicColumn" Then
+            Dim headerColumnIndex As Integer
+            If Integer.TryParse(Convert.ToString(e.CommandArgument), headerColumnIndex) Then
+                RemoveDynamicColumn(headerColumnIndex)
+            End If
+            Exit Sub
+        End If
+
         If e.CommandName <> "DeleteRow" Then Exit Sub
 
         Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
@@ -677,7 +788,6 @@ Partial Class NewOrder
     VendorPopupHelper.GetPopupReturnValue(Me, "SelectedItems"),
     List(Of Dictionary(Of String, Object))
 )
-
         Dim dtSelected As DataTable = PF.ConvertSelectedItemsToDataTable(selectedItems)
 
     End Sub
