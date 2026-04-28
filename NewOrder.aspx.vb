@@ -61,8 +61,20 @@ Partial Class NewOrder
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
         'Array: SQL to select Members, Title of the Page, HideID Y/N
-        Dim arrSelectMembersParameters() As String = {"Select ID, MemberName as [Name] from Members order by CInt(NoOfMovement) desc", "Select Members", "NN"}
-        Dim SelectMembersParameters As String = encryNdecry.Encrypt(arrSelectMembersParameters)
+        'Dim arrSelectMembersParameters() As String = {"", "", "NN"}
+
+
+        Dim MemberListParameters As New clsListProperties
+        With MemberListParameters
+            .SQL = "Select ID, MemberName as [Name] from Members order by CInt(NoOfMovement) desc"
+            .FormTitle = "Select Members"
+            .ColumnHideAndShow = "YN"
+            .EditableColumns = "NN"
+            .ColumnsWidth = New Double() {1, 3}
+            .HoverableList = "Y"
+        End With
+        Dim SelectMembersParameters As String = encryNdecry.EncryptObject(Of clsListProperties)(MemberListParameters)
+
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       lnkBtnAddMembers,
                                       "AddMultipleItemsFromList.aspx?Parameters=" & SelectMembersParameters,
@@ -849,20 +861,32 @@ Partial Class NewOrder
 
 
     Protected Sub lnkBtnAddMembers_Click(sender As Object, e As EventArgs) Handles lnkBtnAddMembers.Click
-        Dim returnValue As Object = VendorPopupHelper.GetPopupReturnValue(Me, "SelectedMembers")
-        Dim L As List(Of ListItem) = TryCast(returnValue, List(Of ListItem))
+        Dim selectedItems As List(Of Dictionary(Of String, Object)) =
+        TryCast(VendorPopupHelper.GetPopupReturnValue(Me, "SelectedItems"),
+                List(Of Dictionary(Of String, Object)))
 
-        If L Is Nothing OrElse L.Count = 0 Then Exit Sub
+        If selectedItems Is Nothing OrElse selectedItems.Count = 0 Then Exit Sub
 
         Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
         If dt Is Nothing Then Exit Sub
 
-        For Each li As ListItem In L
-            If li Is Nothing Then Continue For
+        For Each item As Dictionary(Of String, Object) In selectedItems
+            If item Is Nothing Then Continue For
 
-            ' Skip if member already exists
+            Dim memberId As String = ""
+            Dim memberName As String = ""
+
+            If item.ContainsKey("ID") Then memberId = Convert.ToString(item("ID"))
+            If item.ContainsKey("Name") Then
+                memberName = Convert.ToString(item("Name"))
+            ElseIf item.ContainsKey("MemberName") Then
+                memberName = Convert.ToString(item("MemberName"))
+            End If
+
+            If String.IsNullOrWhiteSpace(memberId) Then Continue For
+
             Dim exists As Boolean = dt.AsEnumerable().
-            Any(Function(r) r("ID").ToString() = li.Value)
+            Any(Function(r) Convert.ToString(r("ID")) = memberId)
 
             If exists Then Continue For
 
@@ -871,9 +895,9 @@ Partial Class NewOrder
             For Each dc As DataColumn In dt.Columns
                 Select Case dc.ColumnName
                     Case "ID"
-                        dr("ID") = li.Value              ' ListItem.Value
+                        dr("ID") = memberId
                     Case "MemberName"
-                        dr("MemberName") = li.Text       ' ListItem.Text
+                        dr("MemberName") = memberName
                     Case "Deposit", "Debt", "Profit"
                         dr(dc.ColumnName) = "0.000"
                     Case Else
@@ -886,9 +910,9 @@ Partial Class NewOrder
 
         dt.AcceptChanges()
         HttpContext.Current.Session("MyTable") = dt
-
         LoadFromObject()
     End Sub
+
 
     Protected Sub ImageButton2_Click(sender As Object, e As ImageClickEventArgs)
 
