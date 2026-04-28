@@ -109,6 +109,7 @@ Partial Class NewOrder
         HeaderLevel3 = EnsureHeaderList("HeaderLevel3", "NoOfItems", visibleColumnCount)
         HeaderLevel4 = EnsureHeaderList("HeaderLevel4", "Item", visibleColumnCount)
         HeaderLevel5 = EnsureHeaderList("HeaderLevel5", "Price", visibleColumnCount)
+        HeaderItemIds = EnsureHeaderList("HeaderItemIds", "", visibleColumnCount)
 
         BuildGrid(dt)
     End Sub
@@ -208,7 +209,7 @@ Partial Class NewOrder
                         spacerCell.BackColor = Drawing.Color.WhiteSmoke
                         h0.Cells.Add(spacerCell)
                     Else
-                        h0.Cells.Add(CreateDeleteHeaderCell(i - 1))
+                        h0.Cells.Add(CreateDeleteHeaderCell(i - 1, HeaderItemIds(i - 1)))
                     End If
                 Next
             End If
@@ -433,7 +434,7 @@ Partial Class NewOrder
 
     End Function
 
-    Private Function CreateDeleteHeaderCell(colIndex As Integer) As TableCell
+    Private Function CreateDeleteHeaderCell(colIndex As Integer, itemId As String) As TableCell
         Dim cell As New TableCell()
         cell.Width = Unit.Pixel(100)
         cell.HorizontalAlign = HorizontalAlign.Center
@@ -449,7 +450,8 @@ Partial Class NewOrder
         imgBtn.ToolTip = "Delete this column"
         imgBtn.AlternateText = "Delete column"
         imgBtn.CommandName = "DeleteDynamicColumn"
-        imgBtn.CommandArgument = colIndex.ToString()
+        imgBtn.CommandArgument = colIndex.ToString() & "|" & If(itemId, "")
+        imgBtn.Attributes("data-itemid") = If(itemId, "")
         imgBtn.OnClientClick = "return confirm('Delete this column?');"
 
         cell.Controls.Add(imgBtn)
@@ -482,27 +484,32 @@ Partial Class NewOrder
         If dataColumnIndex <= 4 Then Exit Sub
 
         dt.Columns.RemoveAt(dataColumnIndex)
-        dt.AcceptChanges()
-        HttpContext.Current.Session("MyTable") = dt
-        clTemp.lcObject = dt
 
         Dim level1 = HeaderLevel1
         Dim level2 = HeaderLevel2
         Dim level3 = HeaderLevel3
         Dim level4 = HeaderLevel4
         Dim level5 = HeaderLevel5
+        Dim itemIds = HeaderItemIds
 
         RemoveHeaderValue(level1, headerColumnIndex)
         RemoveHeaderValue(level2, headerColumnIndex)
         RemoveHeaderValue(level3, headerColumnIndex)
         RemoveHeaderValue(level4, headerColumnIndex)
         RemoveHeaderValue(level5, headerColumnIndex)
+        RemoveHeaderValue(itemIds, headerColumnIndex)
 
         HeaderLevel1 = level1
         HeaderLevel2 = level2
         HeaderLevel3 = level3
         HeaderLevel4 = level4
         HeaderLevel5 = level5
+        HeaderItemIds = itemIds
+
+        RecalculateRowProfits(dt)
+        dt.AcceptChanges()
+        HttpContext.Current.Session("MyTable") = dt
+        clTemp.lcObject = dt
 
         LoadFromObject()
     End Sub
@@ -512,6 +519,118 @@ Partial Class NewOrder
         If index < 0 OrElse index >= values.Count Then Exit Sub
 
         values.RemoveAt(index)
+    End Sub
+
+    Private Function GetRowValue(row As DataRow, columnName As String) As String
+        If row Is Nothing Then Return String.Empty
+        If row.Table Is Nothing OrElse Not row.Table.Columns.Contains(columnName) Then Return String.Empty
+        If row.IsNull(columnName) Then Return String.Empty
+
+        Return Convert.ToString(row(columnName)).Trim()
+    End Function
+
+    Private Function BuildUniqueItemColumnName(dt As DataTable, itemId As String, itemTitle As String) As String
+        Dim baseName As String = If(String.IsNullOrWhiteSpace(itemId), itemTitle, itemId)
+        If String.IsNullOrWhiteSpace(baseName) Then
+            baseName = "ItemColumn"
+        End If
+
+        Dim safeName As New StringBuilder()
+        For Each ch As Char In baseName
+            If Char.IsLetterOrDigit(ch) OrElse ch = "_"c Then
+                safeName.Append(ch)
+            Else
+                safeName.Append("_")
+            End If
+        Next
+
+        Dim columnName As String = safeName.ToString().Trim("_"c)
+        If String.IsNullOrWhiteSpace(columnName) Then
+            columnName = "ItemColumn"
+        End If
+
+        Dim uniqueName As String = columnName
+        Dim suffix As Integer = 1
+        While dt.Columns.Contains(uniqueName)
+            uniqueName = columnName & "_" & suffix.ToString()
+            suffix += 1
+        End While
+
+        Return uniqueName
+    End Function
+
+    Private Function ParseDecimalValue(value As Object) As Decimal
+        If value Is Nothing OrElse value Is DBNull.Value Then Return 0D
+
+        Dim text As String = Convert.ToString(value).Trim()
+        If String.IsNullOrWhiteSpace(text) Then Return 0D
+
+        Dim result As Decimal
+        If Decimal.TryParse(text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.CurrentCulture, result) Then
+            Return result
+        End If
+
+        If Decimal.TryParse(text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, result) Then
+            Return result
+        End If
+
+        Return 0D
+    End Function
+
+    Private Sub RecalculateDynamicColumnSummaries(dt As DataTable)
+        If dt Is Nothing Then Exit Sub
+
+        Dim level2 = HeaderLevel2
+        Dim level3 = HeaderLevel3
+        Dim level5 = HeaderLevel5
+
+        For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
+            Dim headerIndex As Integer = dataColumnIndex - 1
+            If headerIndex < 0 OrElse headerIndex >= level2.Count OrElse headerIndex >= level3.Count Then
+                Continue For
+            End If
+
+            Dim quantityTotal As Decimal = 0D
+            For Each row As DataRow In dt.Rows
+                quantityTotal += ParseDecimalValue(row(dataColumnIndex))
+            Next
+
+            level3(headerIndex) = quantityTotal.ToString("0.###")
+
+            Dim priceValue As Decimal = 0D
+            If headerIndex >= 0 AndAlso headerIndex < level5.Count Then
+                priceValue = ParseDecimalValue(level5(headerIndex))
+            End If
+
+            level2(headerIndex) = (quantityTotal * priceValue).ToString("0.###")
+        Next
+
+        HeaderLevel2 = level2
+        HeaderLevel3 = level3
+    End Sub
+
+    Private Sub RecalculateRowProfits(dt As DataTable)
+        If dt Is Nothing Then Exit Sub
+        If Not dt.Columns.Contains("Profit") Then Exit Sub
+
+        Dim level1 = HeaderLevel1
+
+        For Each row As DataRow In dt.Rows
+            Dim totalProfit As Decimal = 0D
+
+            For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
+                Dim headerIndex As Integer = dataColumnIndex - 1
+                If headerIndex < 0 OrElse headerIndex >= level1.Count Then
+                    Continue For
+                End If
+
+                Dim quantityValue As Decimal = ParseDecimalValue(row(dataColumnIndex))
+                Dim profitValue As Decimal = ParseDecimalValue(level1(headerIndex))
+                totalProfit += quantityValue * profitValue
+            Next
+
+            row("Profit") = totalProfit.ToString("0.000")
+        Next
     End Sub
 
 
@@ -636,6 +755,19 @@ Partial Class NewOrder
             Session("HeaderLevel5") = value
         End Set
     End Property
+
+    Private Property HeaderItemIds As List(Of String)
+        Get
+            If Session("HeaderItemIds") Is Nothing Then
+                Session("HeaderItemIds") = New List(Of String)
+            End If
+            Return CType(Session("HeaderItemIds"), List(Of String))
+        End Get
+        Set(value As List(Of String))
+            Session("HeaderItemIds") = value
+        End Set
+    End Property
+
     Protected Sub btnAddExpRdc_Click(sender As Object, e As EventArgs) Handles btnAddExpRdc.Click
         Dim returnValue As Object = VendorPopupHelper.GetPopupReturnValue(Me, "AddAdjustmentAndClose")
 
@@ -736,8 +868,11 @@ Partial Class NewOrder
 
     Protected Sub GridView1_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView1.RowCommand
         If e.CommandName = "DeleteDynamicColumn" Then
+            Dim commandValue As String = Convert.ToString(e.CommandArgument)
+            Dim commandParts() As String = commandValue.Split("|"c)
             Dim headerColumnIndex As Integer
-            If Integer.TryParse(Convert.ToString(e.CommandArgument), headerColumnIndex) Then
+
+            If commandParts.Length > 0 AndAlso Integer.TryParse(commandParts(0), headerColumnIndex) Then
                 RemoveDynamicColumn(headerColumnIndex)
             End If
             Exit Sub
@@ -757,6 +892,7 @@ Partial Class NewOrder
         If dr IsNot Nothing Then
             dt.Rows.Remove(dr)
             dt.AcceptChanges()
+            RecalculateDynamicColumnSummaries(dt)
             HttpContext.Current.Session("MyTable") = dt
         End If
 
@@ -779,6 +915,7 @@ Partial Class NewOrder
         HeaderLevel3.Add("NoOfItems")
         HeaderLevel4.Add("Item")
         HeaderLevel5.Add("Price")
+        HeaderItemIds.Add("")
 
 
         LoadFromObject()
@@ -789,7 +926,62 @@ Partial Class NewOrder
     List(Of Dictionary(Of String, Object))
 )
         Dim dtSelected As DataTable = PF.ConvertSelectedItemsToDataTable(selectedItems)
+        If dtSelected Is Nothing OrElse dtSelected.Rows.Count = 0 Then Exit Sub
 
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Exit Sub
+
+        Dim level1 = HeaderLevel1
+        Dim level2 = HeaderLevel2
+        Dim level3 = HeaderLevel3
+        Dim level4 = HeaderLevel4
+        Dim level5 = HeaderLevel5
+        Dim itemIds = HeaderItemIds
+        Dim existingItemIds As New HashSet(Of String)(itemIds.Where(Function(x) Not String.IsNullOrWhiteSpace(x)), StringComparer.OrdinalIgnoreCase)
+
+        For Each selectedRow As DataRow In dtSelected.Rows
+            Dim itemId As String = GetRowValue(selectedRow, "ID")
+            Dim itemTitle As String = GetRowValue(selectedRow, "Title")
+            Dim itemPrice As String = GetRowValue(selectedRow, "Price")
+            Dim itemProfit As String = GetRowValue(selectedRow, "Profit")
+
+            If Not String.IsNullOrWhiteSpace(itemId) AndAlso existingItemIds.Contains(itemId) Then
+                Continue For
+            End If
+
+            Dim columnName As String = BuildUniqueItemColumnName(dt, itemId, itemTitle)
+            Dim newColumn As New DataColumn(columnName, GetType(String))
+            newColumn.DefaultValue = String.Empty
+            dt.Columns.Add(newColumn)
+
+            For Each orderRow As DataRow In dt.Rows
+                orderRow(newColumn.ColumnName) = String.Empty
+            Next
+
+            level1.Add(If(String.IsNullOrWhiteSpace(itemProfit), "0.0", itemProfit))
+            level2.Add("Total")
+            level3.Add("NoOfItems")
+            level4.Add(If(String.IsNullOrWhiteSpace(itemTitle), columnName, itemTitle))
+            level5.Add(itemPrice)
+            itemIds.Add(itemId)
+
+            If Not String.IsNullOrWhiteSpace(itemId) Then
+                existingItemIds.Add(itemId)
+            End If
+        Next
+
+        dt.AcceptChanges()
+        HttpContext.Current.Session("MyTable") = dt
+        clTemp.lcObject = dt
+
+        HeaderLevel1 = level1
+        HeaderLevel2 = level2
+        HeaderLevel3 = level3
+        HeaderLevel4 = level4
+        HeaderLevel5 = level5
+        HeaderItemIds = itemIds
+
+        LoadFromObject()
     End Sub
 End Class
 
