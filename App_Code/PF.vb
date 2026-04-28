@@ -1,6 +1,7 @@
 ﻿Imports System.Data
 Imports HttpServerUtility
 Imports System.Globalization
+Imports System.Collections.Generic
 Public Module PF
 
     Dim context1 As System.Web.HttpContext = System.Web.HttpContext.Current
@@ -550,5 +551,49 @@ Public Module PF
         NumberFormat_W_BHD = 6
         NumberFormat_W_USD = 7
     End Enum
+
+    Public Function ConvertSelectedItemsToDataTable(
+        ByVal items As List(Of Dictionary(Of String, Object))
+    ) As DataTable
+
+        Dim dt As New DataTable("SelectedItems")
+
+        If items Is Nothing OrElse items.Count = 0 Then
+            Return dt
+        End If
+
+        ' Create columns from all keys found in all rows
+        For Each item As Dictionary(Of String, Object) In items
+            If item Is Nothing Then Continue For
+
+            For Each key As String In item.Keys
+                If Not dt.Columns.Contains(key) Then
+                    dt.Columns.Add(key, GetType(Object))
+                End If
+            Next
+        Next
+
+        ' Fill rows
+        For Each item As Dictionary(Of String, Object) In items
+            Dim dr As DataRow = dt.NewRow()
+
+            For Each col As DataColumn In dt.Columns
+                If item IsNot Nothing AndAlso item.ContainsKey(col.ColumnName) Then
+                    If item(col.ColumnName) Is Nothing Then
+                        dr(col.ColumnName) = DBNull.Value
+                    Else
+                        dr(col.ColumnName) = item(col.ColumnName)
+                    End If
+                Else
+                    dr(col.ColumnName) = DBNull.Value
+                End If
+            Next
+
+            dt.Rows.Add(dr)
+        Next
+
+        Return dt
+    End Function
+
 
 End Module

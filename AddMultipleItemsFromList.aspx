@@ -70,7 +70,7 @@
             width: 100%;
             min-width: 100%;
             border-collapse: collapse;
-            table-layout: auto;
+            table-layout: fixed;
             font-size: 14px;
             color: #111827;
         }
@@ -101,7 +101,8 @@
         }
 
         .members-selector,
-        .members-selector-cell {
+        .members-selector-cell,
+        .members-selector-column {
             width: 42px;
             text-align: center;
             white-space: nowrap;
@@ -115,18 +116,18 @@
             padding: 4px 6px !important;
         }
 
-.editable-cell input[type="text"] {
-    width: 33.33%;
-    min-width: 30px;
-    padding: 6px 8px;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    background: transparent;
-    box-sizing: border-box;
-    font-size: 14px;
-    color: #111827;
-    outline: none;
-}
+        .editable-cell input[type="text"] {
+            width: 100%;
+            min-width: 0;
+            padding: 6px 8px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            background: transparent;
+            box-sizing: border-box;
+            font-size: 14px;
+            color: #111827;
+            outline: none;
+        }
 
         .editable-cell input[type="text"]:focus {
             border-color: #2563eb;

@@ -11,17 +11,6 @@ Partial Class SelectOneItemFromList
     End Sub
 
     Private Sub LoadVendorOptions()
-        'Dim options As New List(Of OptionItem) From {
-        '    New OptionItem With {.OptionName = "Product Alpha", .OptionValue = "ALPHA"},
-        '    New OptionItem With {.OptionName = "Product Beta", .OptionValue = "BETA"},
-        '    New OptionItem With {.OptionName = "Product Gamma", .OptionValue = "GAMMA"}
-        '}
-        'rptVendorOptions.DataSource = options
-        'rptVendorOptions.DataBind()
-
-
-
-
         Dim options As New List(Of OptionItem)
         Dim DT As New Data.DataTable
         DT = DB.GetDataTable(DB.InfoDB, "Select ID , VenderName from Venders")

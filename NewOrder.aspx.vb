@@ -433,7 +433,7 @@ Partial Class NewOrder
             .FormTitle = "Select Items"
             .ColumnHideAndShow = "YNNN"
             .EditableColumns = "NNYY"
-            .ColumnsWidth = New Double() {1.0, 3.0, 1.0, 1.0}
+            .ColumnsWidth = New Double() {1.0, 2.5, 1.0, 1.0}
         End With
 
 
@@ -654,6 +654,15 @@ Partial Class NewOrder
 
 
         LoadFromObject()
+    End Sub
+    Protected Sub lnkBttnAddItems_Click(sender As Object, e As EventArgs) Handles lnkBttnAddItems.Click
+        Dim selectedItems = TryCast(
+    VendorPopupHelper.GetPopupReturnValue(Me, "SelectedItems"),
+    List(Of Dictionary(Of String, Object))
+)
+
+        Dim dtSelected As DataTable = PF.ConvertSelectedItemsToDataTable(selectedItems)
+
     End Sub
 End Class
 
