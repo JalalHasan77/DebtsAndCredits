@@ -25,13 +25,19 @@ Partial Class NewOrder
 
 
 
-        Dim arrSelectVendersParameters() As String = {"Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders", "Select A Vender"}
-        Dim SelectVendersParameters As String = encryNdecry.Encrypt(arrSelectVendersParameters)
+        'Dim arrSelectVendersParameters() As String = {", "Select A Vender"}
+        'Dim SelectVendersParameters As String = encryNdecry.Encrypt(arrSelectVendersParameters)
 
-
+        Dim ListParameters As New clsListProperties
+        ListParameters.SQL = "Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders"
+        ListParameters.FormTitle = "Select Vendor"
+        ListParameters.ColumnHideAndShow = "YNN"
+        ListParameters.EditableColumns = "NNN"
+        ListParameters.ColumnsWidth = New Double() {1, 3, 1}
+        ListParameters.HoverableList = "Y"
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       LinkButton3,
-                                      "SelectOneItemFromListMultiColumns.aspx?Parameters=" & SelectVendersParameters,
+                                      "SelectOneItemFromListMultiColumns.aspx?Parameters=" & encryNdecry.EncryptObject(Of clsListProperties)(ListParameters),
                                       450,
                                       760,
                                       VendorPopupHelper.PopupPlacement.Center,
@@ -42,6 +48,7 @@ Partial Class NewOrder
                                       "Select Vendor",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
+
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       btnAddExpRdc,
                                       "AddAdditionReduction.aspx",
@@ -51,7 +58,7 @@ Partial Class NewOrder
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
         'Array: SQL to select Members, Title of the Page, HideID Y/N
-        Dim arrSelectMembersParameters() As String = {"Select ID, MemberName as [Name] from Members order by cint(NoOfMovement) desc", "Select Members", "NN"}
+        Dim arrSelectMembersParameters() As String = {"Select ID, MemberName as [Name] from Members order by CInt(NoOfMovement) desc", "Select Members", "NN"}
         Dim SelectMembersParameters As String = encryNdecry.Encrypt(arrSelectMembersParameters)
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       lnkBtnAddMembers,
@@ -405,16 +412,26 @@ Partial Class NewOrder
     End Sub
 
     Protected Sub LinkButton3_Click(sender As Object, e As EventArgs) Handles LinkButton3.Click
-        Dim selectedVendorValue As String = hdnSelectedVendorValue.Value
-        Dim selectedVendorText As String = hdnSelectedVendorText.Value
+        'Dim selectedVendorValue As String = hdnSelectedVendorValue.Value
+        'Dim selectedVendorText As String = hdnSelectedVendorText.Value
 
-        TextBox1.Text = selectedVendorText
-        Label6.Text = hdnSelectedVendorText.Value
+        'TextBox1.Text = selectedVendorText
+        'Label6.Text = hdnSelectedVendorText.Value
 
         ' Add your vendor-related server-side logic here.
         ' Example:
         ' Label2.Text = "Selected vendor: " & selectedVendorText & " (" & selectedVendorValue & ")"
 
+        Dim selectedItems As List(Of Dictionary(Of String, Object)) =
+                   TryCast(VendorPopupHelper.GetPopupReturnValue(Me, "SelectedItems"),
+                    List(Of Dictionary(Of String, Object)))
+        Dim DT As New DataTable
+        DT = PF.ConvertSelectedItemsToDataTable(selectedItems)
+        Dim DR As DataRow
+        DR = DT.Rows(0)
+
+        Label2.Text = DR.Item("Key")
+        TextBox1.Text = DR.Item("Title")
 
         Dim SQL As String = " Select  "
         SQL = SQL + vbCrLf + " Items.ID as ID , "
@@ -425,7 +442,7 @@ Partial Class NewOrder
         SQL = SQL + vbCrLf + " Items "
         SQL = SQL + vbCrLf + " INNER Join VenderItems ON Items.ID = VenderItems.ItemID "
         SQL = SQL + vbCrLf + " WHERE "
-        SQL = SQL + vbCrLf + " VenderItems.VenderID = '" & selectedVendorValue & "'"
+        SQL = SQL + vbCrLf + " VenderItems.VenderID = '" & Label2.Text & "'"
 
         Dim ListProperties As New clsListProperties
         With ListProperties

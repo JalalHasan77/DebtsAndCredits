@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Data
 Imports System.Globalization
@@ -7,16 +7,15 @@ Imports System.Web
 Imports System.Web.UI
 Imports System.Web.UI.WebControls
 
-Partial Class SelectOneItemFromListMultiColumns
+Partial Class SelectOneItemFromList
     Inherits System.Web.UI.Page
 
     Private EncryNDecry As New EncryDecry()
-    Private Const SessionDataKey As String = "SelectOneItemFromListMultiColumns_Data"
-    Private Const ViewStateSqlTextKey As String = "SelectOneItemFromListMultiColumns_SqlText"
-    Private Const ViewStateHideMaskKey As String = "SelectOneItemFromListMultiColumns_HideColumnsMask"
-    Private Const ViewStateEditableMaskKey As String = "SelectOneItemFromListMultiColumns_EditableColumnsMask"
-    Private Const ViewStateColumnsWidthsKey As String = "SelectOneItemFromListMultiColumns_ColumnsWidths"
-    Private Const ViewStateHoverableListKey As String = "SelectOneItemFromListMultiColumns_HoverableList"
+    Private Const SessionDataKey As String = "SelectOneItemFromList_Data"
+    Private Const ViewStateSqlTextKey As String = "SelectOneItemFromList_SqlText"
+    Private Const ViewStateHideMaskKey As String = "SelectOneItemFromList_HideColumnsMask"
+    Private Const ViewStateEditableMaskKey As String = "SelectOneItemFromList_EditableColumnsMask"
+    Private Const ViewStateColumnsWidthsKey As String = "SelectOneItemFromList_ColumnsWidths"
 
     Private Property SqlText As String
         Get
@@ -54,21 +53,6 @@ Partial Class SelectOneItemFromListMultiColumns
         End Set
     End Property
 
-    Protected Property HoverableListMode As String
-        Get
-            Return Convert.ToString(ViewState(ViewStateHoverableListKey))
-        End Get
-        Set(value As String)
-            ViewState(ViewStateHoverableListKey) = NormalizeYesNo(value, "Y")
-        End Set
-    End Property
-
-    Protected ReadOnly Property IsHoverableList As Boolean
-        Get
-            Return String.Equals(HoverableListMode, "Y", StringComparison.OrdinalIgnoreCase)
-        End Get
-    End Property
-
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As EventArgs) Handles Me.Load
         If Not Page.IsPostBack Then
             InitializeFromParameters()
@@ -91,14 +75,12 @@ Partial Class SelectOneItemFromListMultiColumns
             HideColumnsMask = ListParameters.ColumnHideAndShow
             EditableColumnsMask = ListParameters.EditableColumns
             ColumnsWidths = ListParameters.ColumnsWidth
-            HoverableListMode = ListParameters.HoverableList
         Else
             SqlText = String.Empty
             Label1.Text = String.Empty
             HideColumnsMask = String.Empty
             EditableColumnsMask = String.Empty
             ColumnsWidths = Nothing
-            HoverableListMode = "Y"
         End If
     End Sub
 
@@ -161,6 +143,7 @@ Partial Class SelectOneItemFromListMultiColumns
                 End If
 
                 html.Append(">")
+
                 html.Append("<td class=""items-selector-cell""><input type=""radio"" name=""selectedItem"" value=""")
                 html.Append(HttpUtility.HtmlAttributeEncode(originalIdValue))
                 html.Append("""")
@@ -356,22 +339,6 @@ Partial Class SelectOneItemFromListMultiColumns
         Next
 
         Return sb.ToString()
-    End Function
-
-    Private Function NormalizeYesNo(ByVal value As String, Optional ByVal defaultValue As String = "Y") As String
-        If String.IsNullOrWhiteSpace(value) Then
-            Return defaultValue
-        End If
-
-        If String.Equals(value.Trim(), "Y", StringComparison.OrdinalIgnoreCase) Then
-            Return "Y"
-        End If
-
-        If String.Equals(value.Trim(), "N", StringComparison.OrdinalIgnoreCase) Then
-            Return "N"
-        End If
-
-        Return defaultValue
     End Function
 
     Private Function IsColumnHidden(ByVal columnIndex As Integer) As Boolean

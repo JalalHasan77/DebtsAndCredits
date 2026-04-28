@@ -1,9 +1,9 @@
-<%@ Page Language="VB" AutoEventWireup="true" CodeFile="SelectOneItemFromListMultiColumns.aspx.vb" Inherits="SelectOneItemFromListMultiColumns" %>
+﻿<%@ Page Language="VB" AutoEventWireup="true" CodeFile="SelectOneItemFromList.aspx.vb" Inherits="SelectOneItemFromList" %>
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
-    <title>Select One Item From List</title>
+    <title>Select Item</title>
     <style type="text/css">
         html, body, form {
             width: 100%;
@@ -115,20 +115,6 @@
             margin: 0;
         }
 
-        .hoverable-mode .items-selector,
-        .hoverable-mode .items-selector-cell,
-        .hoverable-mode .items-selector-column {
-            display: none;
-            width: 0 !important;
-            min-width: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-        }
-
-        .hoverable-mode .items-selector-cell input[type="radio"] {
-            display: none;
-        }
-
         .editable-cell {
             padding: 4px 6px !important;
         }
@@ -209,8 +195,11 @@
     </style>
 
     <script type="text/javascript">
-        function isHoverableListMode() {
-            return <%= If(IsHoverableList, "true", "false") %>;
+        function closeParentVendorPopup() {
+            if (window.parent && typeof window.parent.closeVendorDialog === 'function') {
+                window.parent.closeVendorDialog();
+            }
+            return false;
         }
 
         function htmlEncode(value) {
@@ -374,7 +363,7 @@
         }
     </script>
 </head>
-<body class="<%= If(IsHoverableList, "hoverable-mode", "radio-mode") %>" onload="initializePage();">
+<body onload="initializePage();">
     <form id="form1" runat="server">
         <div class="items-card">
             <asp:Label ID="Label1" runat="server" CssClass="items-title" Text="Select Item"></asp:Label>

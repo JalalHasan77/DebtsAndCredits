@@ -6,4 +6,6 @@ Public Class clsListProperties
     Public Property ColumnHideAndShow As String
     Public Property EditableColumns As String
     Public Property ColumnsWidth As Double()
+    Public Property HoverableList As String
+
 End Class
