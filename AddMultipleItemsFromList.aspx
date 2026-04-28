@@ -27,7 +27,6 @@
             border-radius: 0;
             background: #ffffff;
             box-shadow: none;
-            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
         }
@@ -110,6 +109,29 @@
 
         .members-selector-cell input[type="checkbox"] {
             margin: 0;
+        }
+
+        .editable-cell {
+            padding: 4px 6px !important;
+        }
+
+.editable-cell input[type="text"] {
+    width: 33.33%;
+    min-width: 30px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    box-sizing: border-box;
+    font-size: 14px;
+    color: #111827;
+    outline: none;
+}
+
+        .editable-cell input[type="text"]:focus {
+            border-color: #2563eb;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
 
         .member-highlight {
@@ -208,6 +230,21 @@
             return html;
         }
 
+        function getRowSearchText(row) {
+            var parts = [];
+            var textCells = row.querySelectorAll('td[data-original-text]');
+            for (var i = 0; i < textCells.length; i++) {
+                parts.push(textCells[i].getAttribute('data-original-text') || '');
+            }
+
+            var inputs = row.querySelectorAll('input[data-search-input="1"]');
+            for (var j = 0; j < inputs.length; j++) {
+                parts.push(inputs[j].value || '');
+            }
+
+            return parts.join(' ').toLowerCase();
+        }
+
         function filterMembers() {
             var txt = document.getElementById('<%= TextBoxSearch.ClientID %>');
             var table = document.getElementById('membersTable');
@@ -226,7 +263,7 @@
 
             for (var i = 0; i < rows.length; i++) {
                 var row = rows[i];
-                var searchText = (row.getAttribute('data-searchtext') || '').toLowerCase();
+                var searchText = getRowSearchText(row);
                 var isMatch = keyword === '' || searchText.indexOf(keyword) > -1;
                 row.style.display = isMatch ? '' : 'none';
 
@@ -245,9 +282,33 @@
                 empty.style.display = visibleCount === 0 ? 'block' : 'none';
             }
         }
+
+        function initializeEditableCells() {
+            var table = document.getElementById('membersTable');
+            if (!table || !table.tBodies.length) {
+                return;
+            }
+
+            var inputs = table.querySelectorAll('input[data-search-input="1"]');
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].addEventListener('input', filterMembers);
+                inputs[i].addEventListener('click', function (e) {
+                    this.focus();
+                    this.select();
+                    if (e) {
+                        e.stopPropagation();
+                    }
+                });
+            }
+        }
+
+        function initializeMembersForm() {
+            initializeEditableCells();
+            filterMembers();
+        }
     </script>
 </head>
-<body onload="filterMembers();">
+<body onload="initializeMembersForm();">
     <form id="form1" runat="server">
         <div class="adj-card">
             <div class="adj-title">

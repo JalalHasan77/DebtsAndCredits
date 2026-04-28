@@ -90,4 +90,40 @@ Public Class EncryDecry
         Return New JavaScriptSerializer().Deserialize(Of Dictionary(Of String, String))(json)
     End Function
 
+    Public Function EncryptObject(Of T As Class)(ByVal obj As T) As String
+        If obj Is Nothing Then
+            Return Nothing
+        End If
+
+        Dim serializer As New JavaScriptSerializer()
+        Dim json As String = serializer.Serialize(obj)
+        Return Encrypt(json)
+    End Function
+
+    Public Function DecryptObject(Of T As Class)(ByVal cipherText As String) As T
+        Dim json As String = Decrypt(cipherText)
+
+        If String.IsNullOrEmpty(json) Then
+            Return Nothing
+        End If
+
+        Dim serializer As New JavaScriptSerializer()
+        Return serializer.Deserialize(Of T)(json)
+    End Function
+
 End Class
+
+'example 
+'Public Class PersonInfo
+'    Public Property ID As String
+'    Public Property Name As String
+'    Public Property Phone As String
+'End Class
+
+'
+'Dim p As New PersonInfo()
+'p.ID = "1001"
+'p.Name = "Ahmed"
+'p.Phone = "123456"
+
+'Dim encrypted As String = EncryptObject(Of PersonInfo)(p)

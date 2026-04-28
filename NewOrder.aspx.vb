@@ -427,9 +427,20 @@ Partial Class NewOrder
         SQL = SQL + vbCrLf + " WHERE "
         SQL = SQL + vbCrLf + " VenderItems.VenderID = '" & selectedVendorValue & "'"
 
+        Dim ListProperties As New clsListProperties
+        With ListProperties
+            .SQL = SQL
+            .FormTitle = "Select Items"
+            .ColumnHideAndShow = "YNNN"
+            .EditableColumns = "NNYY"
+            .ColumnsWidth = New Double() {1.0, 3.0, 1.0, 1.0}
+        End With
+
+
         'Array: SQL to select items, Title of the Page, HideID Y/N
-        Dim arrSelectItemsParameters() As String = {SQL, "Select Items", "YNNN"}
-        Dim SelectItemsParameters As String = encryNdecry.Encrypt(arrSelectItemsParameters)
+        'Dim arrSelectItemsParameters() As String = {SQL, "Select Items", "YNNN", "NNYY"}
+        'Dim SelectItemsParameters As String = encryNdecry.Encrypt(arrSelectItemsParameters)
+        Dim SelectItemsParameters As String = encryNdecry.EncryptObject(Of clsListProperties)(ListProperties)
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       lnkBttnAddItems,
                                       "AddMultipleItemsFromList.aspx?Parameters=" & SelectItemsParameters,
@@ -745,4 +756,7 @@ Public Class EditableTemplate
 
     End Sub
 End Class
+
+
+
 

@@ -12,6 +12,7 @@ Partial Class AddMultipleItemsFromList
     Private Const SessionDataKey As String = "AddMultipleItemsFromList_Data"
     Private Const ViewStateSqlTextKey As String = "AddMultipleItemsFromList_SqlText"
     Private Const ViewStateHideMaskKey As String = "AddMultipleItemsFromList_HideColumnsMask"
+    Private Const ViewStateEditableMaskKey As String = "AddMultipleItemsFromList_EditableColumnsMask"
 
     Private Property SqlText As String
         Get
@@ -27,7 +28,16 @@ Partial Class AddMultipleItemsFromList
             Return Convert.ToString(ViewState(ViewStateHideMaskKey))
         End Get
         Set(value As String)
-            ViewState(ViewStateHideMaskKey) = NormalizeHideColumnsMask(value)
+            ViewState(ViewStateHideMaskKey) = NormalizeMask(value)
+        End Set
+    End Property
+
+    Private Property EditableColumnsMask As String
+        Get
+            Return Convert.ToString(ViewState(ViewStateEditableMaskKey))
+        End Get
+        Set(value As String)
+            ViewState(ViewStateEditableMaskKey) = NormalizeMask(value)
         End Set
     End Property
 
@@ -41,33 +51,25 @@ Partial Class AddMultipleItemsFromList
 
     Private Sub InitializeFromParameters()
         Dim encryptedParameters As String = Request("Parameters")
-        Dim arrParametres As String() = Nothing
+        Dim ListParameters As clsListProperties = EncryNDecry.DecryptObject(Of clsListProperties)(encryptedParameters)
 
-        If Not String.IsNullOrEmpty(encryptedParameters) Then
-            arrParametres = EncryNDecry.DecryptToArray(encryptedParameters)
-        End If
+        SqlText = ListParameters.SQL
+        Label1.Text = ListParameters.FormTitle
+        HideColumnsMask = ListParameters.ColumnHideAndShow
+        EditableColumnsMask = ListParameters.EditableColumns
+        Dim ColumnsWidths() As Double = ListParameters.ColumnsWidth
 
-        If arrParametres IsNot Nothing AndAlso arrParametres.Length > 0 Then
-            SqlText = arrParametres(0)
-        Else
-            SqlText = String.Empty
-        End If
-
-        If arrParametres IsNot Nothing AndAlso arrParametres.Length > 1 Then
-            Label1.Text = arrParametres(1)
-        Else
-            Label1.Text = String.Empty
-        End If
-
-        If arrParametres IsNot Nothing AndAlso arrParametres.Length > 2 Then
-            HideColumnsMask = arrParametres(2)
-        Else
-            HideColumnsMask = String.Empty
-        End If
     End Sub
 
     Private Sub LoadOptions(ByVal selectedIds As HashSet(Of String))
-        Dim dt As DataTable = DB.GetDataTable(DB.InfoDB, SqlText)
+        Dim dt As DataTable
+
+        If String.IsNullOrWhiteSpace(SqlText) Then
+            dt = New DataTable()
+        Else
+            dt = DB.GetDataTable(DB.InfoDB, SqlText)
+        End If
+
         Session(SessionDataKey) = dt
         litMembersTable.Text = BuildMembersTableHtml(dt, selectedIds)
     End Sub
@@ -96,21 +98,23 @@ Partial Class AddMultipleItemsFromList
         html.Append("<tbody>")
 
         If dt IsNot Nothing Then
-            For Each dr As DataRow In dt.Rows
-                Dim idValue As String = String.Empty
+            For rowIndex As Integer = 0 To dt.Rows.Count - 1
+                Dim dr As DataRow = dt.Rows(rowIndex)
+                Dim originalIdValue As String = String.Empty
+
                 If dt.Columns.Count > 0 Then
-                    idValue = Convert.ToString(dr(0))
+                    originalIdValue = Convert.ToString(dr(0))
                 End If
 
                 html.Append("<tr data-searchtext=""")
-                html.Append(HttpUtility.HtmlAttributeEncode(BuildSearchText(dr)))
+                html.Append(HttpUtility.HtmlAttributeEncode(BuildSearchText(dr, rowIndex)))
                 html.Append(""">")
 
                 html.Append("<td class=""members-selector-cell""><input type=""checkbox"" name=""selectedItem"" value=""")
-                html.Append(HttpUtility.HtmlAttributeEncode(idValue))
+                html.Append(HttpUtility.HtmlAttributeEncode(originalIdValue))
                 html.Append("""")
 
-                If selectedIds IsNot Nothing AndAlso selectedIds.Contains(idValue) Then
+                If selectedIds IsNot Nothing AndAlso selectedIds.Contains(originalIdValue) Then
                     html.Append(" checked=""checked""")
                 End If
 
@@ -121,13 +125,22 @@ Partial Class AddMultipleItemsFromList
                         Continue For
                     End If
 
-                    Dim col As DataColumn = dt.Columns(colIndex)
-                    Dim cellText As String = Convert.ToString(dr(col.ColumnName))
-                    html.Append("<td data-original-text=""")
-                    html.Append(HttpUtility.HtmlAttributeEncode(cellText))
-                    html.Append(""">")
-                    html.Append(HttpUtility.HtmlEncode(cellText))
-                    html.Append("</td>")
+                    Dim originalCellText As String = Convert.ToString(dr(colIndex))
+                    Dim renderedCellText As String = GetRenderedCellValue(rowIndex, colIndex, originalCellText)
+
+                    If IsColumnEditable(colIndex) Then
+                        html.Append("<td class=""editable-cell""><input type=""text"" name=""")
+                        html.Append(HttpUtility.HtmlAttributeEncode(GetCellInputName(rowIndex, colIndex)))
+                        html.Append(""" value=""")
+                        html.Append(HttpUtility.HtmlAttributeEncode(renderedCellText))
+                        html.Append(""" data-search-input=""1"" /></td>")
+                    Else
+                        html.Append("<td data-original-text=""")
+                        html.Append(HttpUtility.HtmlAttributeEncode(renderedCellText))
+                        html.Append(""">")
+                        html.Append(HttpUtility.HtmlEncode(renderedCellText))
+                        html.Append("</td>")
+                    End If
                 Next
 
                 html.Append("</tr>")
@@ -138,7 +151,7 @@ Partial Class AddMultipleItemsFromList
         Return html.ToString()
     End Function
 
-    Private Function BuildSearchText(ByVal dr As DataRow) As String
+    Private Function BuildSearchText(ByVal dr As DataRow, ByVal rowIndex As Integer) As String
         Dim sb As New StringBuilder()
 
         For colIndex As Integer = 0 To dr.Table.Columns.Count - 1
@@ -149,13 +162,15 @@ Partial Class AddMultipleItemsFromList
             If sb.Length > 0 Then
                 sb.Append(" ")
             End If
-            sb.Append(Convert.ToString(dr(colIndex)))
+
+            Dim cellText As String = Convert.ToString(dr(colIndex))
+            sb.Append(GetRenderedCellValue(rowIndex, colIndex, cellText))
         Next
 
         Return sb.ToString()
     End Function
 
-    Private Function NormalizeHideColumnsMask(ByVal value As String) As String
+    Private Function NormalizeMask(ByVal value As String) As String
         If String.IsNullOrEmpty(value) Then
             Return String.Empty
         End If
@@ -183,6 +198,39 @@ Partial Class AddMultipleItemsFromList
         Return HideColumnsMask(columnIndex) = "Y"c
     End Function
 
+    Private Function IsColumnEditable(ByVal columnIndex As Integer) As Boolean
+        If IsColumnHidden(columnIndex) Then
+            Return False
+        End If
+
+        If String.IsNullOrEmpty(EditableColumnsMask) Then
+            Return False
+        End If
+
+        If columnIndex < 0 OrElse columnIndex >= EditableColumnsMask.Length Then
+            Return False
+        End If
+
+        Return EditableColumnsMask(columnIndex) = "Y"c
+    End Function
+
+    Private Function GetCellInputName(ByVal rowIndex As Integer, ByVal colIndex As Integer) As String
+        Return String.Format("cell_{0}_{1}", rowIndex, colIndex)
+    End Function
+
+    Private Function GetRenderedCellValue(ByVal rowIndex As Integer, ByVal colIndex As Integer, ByVal defaultValue As String) As String
+        If IsColumnHidden(colIndex) OrElse Not Page.IsPostBack OrElse Not IsColumnEditable(colIndex) Then
+            Return defaultValue
+        End If
+
+        Dim postedValue As String = Request.Form(GetCellInputName(rowIndex, colIndex))
+        If postedValue Is Nothing Then
+            Return defaultValue
+        End If
+
+        Return postedValue
+    End Function
+
     Private Function GetSelectedIdsFromRequest() As HashSet(Of String)
         Dim selected As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
         Dim values As String() = Request.Form.GetValues("selectedItem")
@@ -206,16 +254,28 @@ Partial Class AddMultipleItemsFromList
         Dim dt As DataTable = TryCast(Session(SessionDataKey), DataTable)
 
         If dt Is Nothing Then
-            dt = DB.GetDataTable(DB.InfoDB, SqlText)
+            If String.IsNullOrWhiteSpace(SqlText) Then
+                dt = New DataTable()
+            Else
+                dt = DB.GetDataTable(DB.InfoDB, SqlText)
+            End If
         End If
 
         If dt IsNot Nothing AndAlso dt.Columns.Count > 0 Then
-            For Each dr As DataRow In dt.Rows
-                Dim valueText As String = Convert.ToString(dr(0))
-                If selectedIds.Contains(valueText) Then
+            For rowIndex As Integer = 0 To dt.Rows.Count - 1
+                Dim dr As DataRow = dt.Rows(rowIndex)
+                Dim originalIdValue As String = Convert.ToString(dr(0))
+
+                If selectedIds.Contains(originalIdValue) Then
                     Dim item As New ListItem()
-                    item.Value = valueText
-                    item.Text = If(dt.Columns.Count > 1, Convert.ToString(dr(1)), valueText)
+                    item.Value = GetRenderedCellValue(rowIndex, 0, originalIdValue)
+
+                    If dt.Columns.Count > 1 Then
+                        item.Text = GetRenderedCellValue(rowIndex, 1, Convert.ToString(dr(1)))
+                    Else
+                        item.Text = item.Value
+                    End If
+
                     l.Add(item)
                 End If
             Next
