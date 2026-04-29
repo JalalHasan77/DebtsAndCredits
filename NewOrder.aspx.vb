@@ -22,6 +22,10 @@ Partial Class NewOrder
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         'AddJQueryLinks(Page, True)
 
+        If IsPostBack Then
+            PersistPostedGridValues()
+        End If
+
         If Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then
             TextBox1.Text = hdnSelectedVendorText.Value
         End If
@@ -172,6 +176,37 @@ Partial Class NewOrder
 
         Return tf
     End Function
+
+    Private Sub PersistPostedGridValues()
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Exit Sub
+        If GridView1.Rows.Count = 0 Then Exit Sub
+
+        Dim colIndex As Integer = 0
+
+        For Each dc As DataColumn In dt.Columns
+            If dc.ColumnName = "ID" Then Continue For
+
+            For Each row As GridViewRow In GridView1.Rows
+                If row.RowType <> DataControlRowType.DataRow Then Continue For
+                If row.RowIndex < 0 OrElse row.RowIndex >= dt.Rows.Count Then Continue For
+
+                Dim txt As TextBox = TryCast(row.FindControl("txtValue_" & row.RowIndex & "_" & colIndex), TextBox)
+                If txt IsNot Nothing Then
+                    dt.Rows(row.RowIndex)(dc.ColumnName) = txt.Text
+                End If
+            Next
+
+            colIndex += 1
+        Next
+
+        RecalculateDynamicColumnSummaries(dt)
+        RecalculateRowProfits(dt)
+        dt.AcceptChanges()
+
+        HttpContext.Current.Session("MyTable") = dt
+        clTemp.lcObject = dt
+    End Sub
 
 
     'Protected Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
@@ -838,6 +873,7 @@ Partial Class NewOrder
         dt.Rows.Add(newRow)
 
         BindAddRdcGrid(dt)
+        LoadFromObject()
 
         'TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
     End Sub

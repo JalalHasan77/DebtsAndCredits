@@ -63,12 +63,12 @@
 
             .exp-rdc-row {
         width: 100%;
-        text-align: center;
+        text-align: left;
         margin-top: 10px;
     }
 
     .exp-rdc-box {
-        display: inline-block;
+        display: block;
         text-align: left;
     }
 
@@ -472,7 +472,69 @@
 
 </div>
                                         <br />
-<div class="row exp-rdc-row">
+<div class="row">
+    <asp:Label ID="Label7" runat="server" Font-Bold="True" Font-Names="Arial" Font-Size="20px" Text="Grande Total:"></asp:Label>
+</div>
+                                        <br />
+<div class="row">
+    <asp:LinkButton ID="lnkBtnAddMembers" runat="server" Font-Names="Arial" Font-Size="14px">Add Members
+    </asp:LinkButton>
+
+    <span style="display:inline-block; width:15px;"></span>
+
+    <asp:LinkButton ID="lnkBttnAddItems" runat="server" Font-Names="Arial" Font-Size="14px">Add Items</asp:LinkButton>
+
+    <span style="display:inline-block; width:15px;"></span>
+
+<asp:LinkButton ID="LinkButton4"
+                runat="server"
+                Font-Names="Arial"
+                Font-Size="14px"
+                OnClientClick="document.getElementById('<%= Button2.ClientID %>').click(); return false;">
+    Add one Column
+</asp:LinkButton>
+</div>
+
+                                        <div style="display: flex;flex-direction: row; justify-content:flex-start">
+
+                                        <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated" Font-Size="12px">
+                                            <AlternatingRowStyle BackColor="White" />
+                                            <Columns>
+                                                <asp:TemplateField>
+                                                    <ItemTemplate>
+                                                        <asp:ImageButton ID="ImageButton2" runat="server" ImageUrl="~/Images/Trash16x16.png" OnClick="ImageButton2_Click" />
+                                                    </ItemTemplate>
+                                                </asp:TemplateField>
+                                                <asp:BoundField DataField="MemberName" />
+                                                <asp:TemplateField>
+                                                        <ItemTemplate>
+                                                            <div class="cell-wrapper" onclick="editCell(this)">
+                                                                <asp:Label ID="lblValue" runat="server"
+                                                                    Text='' />
+
+                                                                <asp:TextBox ID="txtValue" runat="server"
+                                                                    Text=''
+                                                                    Style="display:none; width:85%;"
+                                                                    onblur="saveCell(this)"
+                                                                    onkeydown="return handleEnter(event, this);" />
+                                                            </div>
+                                                        </ItemTemplate>
+                                                        <ItemStyle Width="150px" />
+                                                </asp:TemplateField>
+                                            </Columns>
+                                            <EditRowStyle BackColor="#2461BF" />
+                                            <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                                            <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                                            <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
+                                            <RowStyle BackColor="#EFF3FB" />
+                                            <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
+                                            <SortedAscendingCellStyle BackColor="#F5F7FB" />
+                                            <SortedAscendingHeaderStyle BackColor="#6D95E1" />
+                                            <SortedDescendingCellStyle BackColor="#E9EBEF" />
+                                            <SortedDescendingHeaderStyle BackColor="#4870BE" />
+                                        </asp:GridView>
+                                       </div>
+                                       <div class="row exp-rdc-row">
     <div class="exp-rdc-box">
         <asp:LinkButton ID="btnAddExpRdc"
                         runat="server"
@@ -563,69 +625,8 @@
     <SortedDescendingCellStyle BackColor="#E9EBEF" />
     <SortedDescendingHeaderStyle BackColor="#4870BE" />
 </asp:GridView>
-
-
     </div>
 </div>
-<br />
-<div class="row">
-    <asp:LinkButton ID="lnkBtnAddMembers" runat="server" Font-Names="Arial" Font-Size="14px">Add Members
-    </asp:LinkButton>
-
-    <span style="display:inline-block; width:15px;"></span>
-
-    <asp:LinkButton ID="lnkBttnAddItems" runat="server" Font-Names="Arial" Font-Size="14px">Add Items</asp:LinkButton>
-
-    <span style="display:inline-block; width:15px;"></span>
-
-<asp:LinkButton ID="LinkButton4"
-                runat="server"
-                Font-Names="Arial"
-                Font-Size="14px"
-                OnClientClick="document.getElementById('<%= Button2.ClientID %>').click(); return false;">
-    Add one Column
-</asp:LinkButton>
-</div>
-
-                                        <div style="display: flex;flex-direction: row; justify-content:flex-start">
-
-                                        <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated" Font-Size="12px">
-                                            <AlternatingRowStyle BackColor="White" />
-                                            <Columns>
-                                                <asp:TemplateField>
-                                                    <ItemTemplate>
-                                                        <asp:ImageButton ID="ImageButton2" runat="server" ImageUrl="~/Images/Trash16x16.png" OnClick="ImageButton2_Click" />
-                                                    </ItemTemplate>
-                                                </asp:TemplateField>
-                                                <asp:BoundField DataField="MemberName" />
-                                                <asp:TemplateField>
-                                                        <ItemTemplate>
-                                                            <div class="cell-wrapper" onclick="editCell(this)">
-                                                                <asp:Label ID="lblValue" runat="server"
-                                                                    Text='' />
-
-                                                                <asp:TextBox ID="txtValue" runat="server"
-                                                                    Text=''
-                                                                    Style="display:none; width:85%;"
-                                                                    onblur="saveCell(this)"
-                                                                    onkeydown="return handleEnter(event, this);" />
-                                                            </div>
-                                                        </ItemTemplate>
-                                                        <ItemStyle Width="150px" />
-                                                </asp:TemplateField>
-                                            </Columns>
-                                            <EditRowStyle BackColor="#2461BF" />
-                                            <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                                            <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                                            <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
-                                            <RowStyle BackColor="#EFF3FB" />
-                                            <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
-                                            <SortedAscendingCellStyle BackColor="#F5F7FB" />
-                                            <SortedAscendingHeaderStyle BackColor="#6D95E1" />
-                                            <SortedDescendingCellStyle BackColor="#E9EBEF" />
-                                            <SortedDescendingHeaderStyle BackColor="#4870BE" />
-                                        </asp:GridView>
-                                       </div>
                                     </td>
                                     <td style="width: 20%; vertical-align: top;">
                                         &nbsp;</td>
