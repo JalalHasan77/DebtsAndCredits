@@ -182,28 +182,29 @@
             lbl.innerText = textbox.value;
             textbox.style.display = "none";
             lbl.style.display = "inline";
-            //alert('');
-            //====================================================
             //====================================================
             // Get cell info
             var rowIndex = wrapper.getAttribute("data-rowindex");
             var columnName = wrapper.getAttribute("data-column");
 
+            // calculateColumn and iterateRowCells are pure DOM operations — run immediately.
+            calculateColumn(colIndex);
+            iterateRowCells(rowIndex);
+
+            // SaveCell must complete first so the session has the new value
+            // before RecalculateSubtotal reads it.
             PageMethods.SaveCell(
                 parseInt(rowIndex),
                 columnName,
                 textbox.value,
                 function () {
-
+                    // Success: session is now updated — safe to recalculate.
+                    recalculateSubtotal();
                 },
                 function (error) {
-
+                    console.log('SaveCell error: ' + error.get_message());
                 }
             );
-
-            calculateColumn(colIndex);
-            iterateRowCells(rowIndex);
-
         }
 
         function iterateRowCells(rowIndex) {
@@ -221,7 +222,7 @@
 
                 var colIndex = parseInt(cellWrapper.getAttribute("data-columnindex"));
 
-                // ✅ Skip first 4 columns
+                // Skip first 4 columns
                 if (colIndex <= 3) return;
 
                 var span = cellWrapper.querySelector("span");
@@ -234,11 +235,9 @@
                 }
                 else if (input && input.value.trim() !== "") {
                     value = parseFloat(input.value) || 0;
-
                 }
 
                 if (value != 0) {
-                    // alert(value);
                     var cellWrapper2 = document.querySelector(
                         ".cell-wrapper[data-headercol='" + colIndex + "'][data-headerlevel='1']"
                     );
@@ -253,11 +252,9 @@
                     }
 
                     if (value2 != 0) {
-                        //  alert('Net profit' + value * value2);
                         MasterTotalProfit = MasterTotalProfit + value * value2;
                     }
                 }
-                // 👉 Your calculation here
             });
 
             var profitCell = document.querySelector(
@@ -299,7 +296,6 @@
                     value = parseFloat(span.innerText) || 0;
                 else if (input && input.value.trim() !== "")
                     value = parseFloat(input.value) || 0;
-                // 👉 Do your calculation here
             });
         }
 
@@ -324,24 +320,29 @@
             var colIndex = wrapper.getAttribute("data-headercol");
             var level = wrapper.getAttribute("data-headerlevel");
 
+            // calculateColumn is a pure DOM operation — run immediately.
+            calculateColumn(colIndex);
+
+            if (level == 1) {
+                iterateThroughAllCells();
+            }
+
+            // SaveHeader must complete first so the session has the new value
+            // before RecalculateSubtotal reads it.
             PageMethods.SaveHeader(
                 parseInt(colIndex),
                 parseInt(level),
                 textbox.value,
-                function () { },
+                function () {
+                    // Success: session is now updated — safe to recalculate.
+                    recalculateSubtotal();
+                },
                 function (err) { console.log(err.get_message()); }
             );
-
-            calculateColumn(colIndex);
-
-            if (level == 1) {
-                iterateThroughAllCells()
-            }
 
         }
 
         function iterateThroughAllCells() {
-            //====================
             var rowCells = document.querySelectorAll(
                 ".cell-wrapper[data-columnindex='4']"
             );
@@ -349,7 +350,6 @@
                 var rowIndex = cellWrapper.getAttribute("data-rowindex");
 
                 if (parseInt(rowIndex) > 0) {
-                    // safe to execute
                     iterateRowCells(rowIndex);
                 }
             })
@@ -410,6 +410,24 @@
                     function (err) { console.log(err.get_message()); }
                 );
             }
+        }
+
+        // =====================================================
+        // Recalculates Subtotal live without a full postback.
+        // Called from saveCell() and saveHeader().
+        // Formula per column: (Price + Profit) * NoOfItems
+        // where NoOfItems = sum of all member quantities.
+        // =====================================================
+        function recalculateSubtotal() {
+            PageMethods.RecalculateSubtotal(
+                function (result) {
+                    var el = document.getElementById('litSubtotal');
+                    if (el) el.innerText = result;
+                },
+                function (err) {
+                    console.log('Subtotal error: ' + err.get_message());
+                }
+            );
         }
 
         function initializeDateTimePickers() {
@@ -553,12 +571,14 @@
 
             <span style="display:inline-block; width:15px;"></span>
 
+            <%-- Button2 uses ClientIDMode="Static" so its ID is always "Button2" in the DOM --%>
+            <asp:Button ID="Button2" runat="server" ClientIDMode="Static" Style="display:none;" />
+
             <asp:LinkButton ID="LinkButton4"
                             runat="server"
                             Font-Names="Arial"
                             Font-Size="14px"
-                ClientIDMode="Static"   
-                            OnClientClick="document.getElementById('<%= Button2.ClientID %>').click(); return false;">
+                            OnClientClick="document.getElementById('Button2').click(); return false;">
                 Add one Column
             </asp:LinkButton>
         </div>
@@ -703,59 +723,30 @@
     <div class="calc-box">
         <div class="section-title">Calculations</div>
         <div class="section-panel">
-<%--            <asp:GridView ID="GridView3"
-                          runat="server"
-                          CssClass="calc-grid"
-                          CellPadding="4"
-                          ForeColor="#333333"
-                          Font-Names="Arial"
-                          Font-Size="12px"
-                          AutoGenerateColumns="False"
-                          ShowHeaderWhenEmpty="True">
-                <AlternatingRowStyle BackColor="White" />
-                <Columns>
-                    <asp:BoundField DataField="PaymentType"
-                                    HeaderText="Payment type"
-                                    HeaderStyle-CssClass="col-payment"
-                                    ItemStyle-CssClass="col-payment" />
-                    <asp:BoundField DataField="Amount"
-                                    HeaderText="Amount"
-                                    HeaderStyle-CssClass="col-amount"
-                                    ItemStyle-CssClass="col-amount" />
-                </Columns>
-                <EditRowStyle BackColor="#2461BF" />
-                <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
-                <RowStyle BackColor="#EFF3FB" />
-                <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
-                <SortedAscendingCellStyle BackColor="#F5F7FB" />
-                <SortedAscendingHeaderStyle BackColor="#6D95E1" />
-                <SortedDescendingCellStyle BackColor="#E9EBEF" />
-                <SortedDescendingHeaderStyle BackColor="#4870BE" />
-            </asp:GridView>--%>
+            <%-- Calculations summary panel: div-based, Arial font, no <% %> code blocks --%>
             <div style="width:300px; font-family:Arial;">
-    <asp:Repeater ID="rptSummary" runat="server">
-        <ItemTemplate>
-            <div style="display:flex; justify-content:space-between; padding:2px 0;">
-                <span><%# Eval("Label") %></span>
-                <span style="text-align:right;"><%# Eval("Value", "{0:0.000}") %></span>
+                <asp:Repeater ID="rptSummary" runat="server">
+                    <ItemTemplate>
+                        <div style="display:flex; justify-content:space-between; padding:2px 0;">
+                            <span><%# Eval("Label") %></span>
+                            <span style="text-align:right;"><%# Eval("Value", "{0:0.000}") %></span>
+                        </div>
+                    </ItemTemplate>
+                </asp:Repeater>
+
+                <div style="display:flex; justify-content:space-between; padding:2px 0;">
+                    <span>Subtotal</span>
+                    <%-- asp:Label renders as <span id="litSubtotal"> so JS getElementById works --%>
+                    <asp:Label ID="litSubtotal" runat="server" ClientIDMode="Static" Text="0.000" />
+                </div>
+
+                <hr />
+
+                <div style="display:flex; justify-content:space-between; padding:2px 0; font-weight:bold;">
+                    <span>Grand Total</span>
+                    <asp:Literal ID="litGrandTotal" runat="server" />
+                </div>
             </div>
-        </ItemTemplate>
-    </asp:Repeater>
-
-    <div style="display:flex; justify-content:space-between; padding:2px 0;">
-        <span>Subtotal</span>
-        <asp:Literal ID="litSubtotal" runat="server" />
-    </div>
-
-    <hr />
-
-    <div style="display:flex; justify-content:space-between; padding:2px 0; font-weight:bold;">
-        <span>Grand Total</span>
-        <asp:Literal ID="litGrandTotal" runat="server" />
-    </div>
-</div>
         </div>
     </div>
 </div>
@@ -770,4 +761,3 @@
 </form>
 </body>
 </html>
-

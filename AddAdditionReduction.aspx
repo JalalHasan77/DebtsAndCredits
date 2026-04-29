@@ -199,6 +199,7 @@
             <div class="adj-field">
                 <asp:DropDownList ID="DropDownList2" runat="server" CssClass="adj-dropdown">
                     <asp:ListItem Selected="True">VAT</asp:ListItem>
+                    <asp:ListItem>Delivery Charge</asp:ListItem>
                     <asp:ListItem>Discount</asp:ListItem>
                     <asp:ListItem>Fees</asp:ListItem>
                 </asp:DropDownList>

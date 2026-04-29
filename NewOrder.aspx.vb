@@ -22,12 +22,13 @@ Partial Class NewOrder
     End Sub
 
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
-        'AddJQueryLinks(Page, True)
 
         If IsPostBack Then
             PersistPostedGridValues()
         Else
-            litSubtotal.Text = Subtotal.ToString("0.000")
+            ' First load only — on postbacks, delete handlers call RefreshSubtotal()
+            ' themselves AFTER the data has changed, so setting it here would be stale.
+            litSubtotal.Text = CalculateSubtotal().ToString("0.000")
             litGrandTotal.Text = GrandTotal.ToString("0.000")
         End If
 
@@ -64,10 +65,6 @@ Partial Class NewOrder
                                       "Select Adj",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
-        'Array: SQL to select Members, Title of the Page, HideID Y/N
-        'Dim arrSelectMembersParameters() As String = {"", "", "NN"}
-
-
         Dim MemberListParameters As New clsListProperties
         With MemberListParameters
             .SQL = "Select ID, MemberName as [Name] from Members order by CInt(NoOfMovement) desc"
@@ -88,9 +85,6 @@ Partial Class NewOrder
                                       "Select Adj",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
-
-
-
     End Sub
 
     Sub CreateInitialTable()
@@ -103,20 +97,12 @@ Partial Class NewOrder
     "'Jalal'," &
     "'Safa Shamsan','Areej') order by ID;")
 
-        'DT.Rows.Add(DR)
         HttpContext.Current.Session("MyTable") = DT
     End Sub
 
-
-
-
     Sub LoadFromObject()
-        'Dim DT As New Data.DataTable
-        'DT = CType(clTemp.lcObject, DataTable)
-
         Dim dt As DataTable =
         CType(HttpContext.Current.Session("MyTable"), DataTable)
-
 
         Dim visibleColumnCount As Integer = Math.Max(dt.Columns.Count - 1, 0)
 
@@ -129,6 +115,11 @@ Partial Class NewOrder
 
         BuildGrid(dt)
     End Sub
+
+    ' -----------------------------------------------------------------------
+    ' WebMethod: SaveCell
+    ' Saves a single cell value into the in-session DataTable.
+    ' -----------------------------------------------------------------------
     <WebMethod()>
     <ScriptMethod()>
     Public Shared Sub SaveCell(rowIndex As Integer, columnName As String, value As String)
@@ -137,12 +128,103 @@ Partial Class NewOrder
         CType(HttpContext.Current.Session("MyTable"), DataTable)
 
         dt.Rows(rowIndex)(columnName) = value
-
         dt.AcceptChanges()
-
         HttpContext.Current.Session("MyTable") = dt
     End Sub
 
+    ' -----------------------------------------------------------------------
+    ' WebMethod: RecalculateSubtotal
+    ' Called by the JS recalculateSubtotal() function after every cell or
+    ' header edit.  Formula: SUM over all item columns of (Price + Profit) * NoOfItems
+    ' where NoOfItems = sum of all member row quantities for that column.
+    ' Returns the formatted string directly so the JS can update litSubtotal.
+    ' -----------------------------------------------------------------------
+    <WebMethod()>
+    <ScriptMethod()>
+    Public Shared Function RecalculateSubtotal() As String
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Return "0.000"
+
+        Dim level1 As List(Of String) = TryCast(HttpContext.Current.Session("HeaderLevel1"), List(Of String))  ' Profit per column
+        Dim level5 As List(Of String) = TryCast(HttpContext.Current.Session("HeaderLevel5"), List(Of String))  ' Price per column
+
+        If level1 Is Nothing OrElse level5 Is Nothing Then Return "0.000"
+
+        Dim subtotal As Decimal = 0D
+
+        ' Dynamic item columns start at data index 5 (0=ID, 1=MemberName, 2=Deposit, 3=Debt, 4=Profit)
+        For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
+            Dim headerIndex As Integer = dataColumnIndex - 1   ' header lists are 0-based from column 1
+
+            If headerIndex >= level1.Count OrElse headerIndex >= level5.Count Then Continue For
+
+            Dim price As Decimal = 0D
+            Decimal.TryParse(level5(headerIndex),
+                             System.Globalization.NumberStyles.Any,
+                             System.Globalization.CultureInfo.InvariantCulture, price)
+
+            Dim profit As Decimal = 0D
+            Decimal.TryParse(level1(headerIndex),
+                             System.Globalization.NumberStyles.Any,
+                             System.Globalization.CultureInfo.InvariantCulture, profit)
+
+            ' Sum all member quantities in this item column
+            For Each row As DataRow In dt.Rows
+                Dim qty As Decimal = 0D
+                Decimal.TryParse(Convert.ToString(row(dataColumnIndex)),
+                                 System.Globalization.NumberStyles.Any,
+                                 System.Globalization.CultureInfo.InvariantCulture, qty)
+
+                subtotal += (price + profit) * qty
+            Next
+        Next
+
+        Return subtotal.ToString("0.000")
+    End Function
+
+    ' -----------------------------------------------------------------------
+    ' CalculateSubtotal (instance method)
+    ' Same logic as the WebMethod but used server-side during Page_Load so
+    ' litSubtotal is correctly populated on initial load and postbacks.
+    ' -----------------------------------------------------------------------
+    Private Function CalculateSubtotal() As Decimal
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Return 0D
+
+        Dim level1 As List(Of String) = TryCast(Session("HeaderLevel1"), List(Of String))  ' Profit per column
+        Dim level5 As List(Of String) = TryCast(Session("HeaderLevel5"), List(Of String))  ' Price per column
+
+        If level1 Is Nothing OrElse level5 Is Nothing Then Return 0D
+
+        Dim subtotal As Decimal = 0D
+
+        For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
+            Dim headerIndex As Integer = dataColumnIndex - 1
+
+            If headerIndex >= level1.Count OrElse headerIndex >= level5.Count Then Continue For
+
+            Dim price As Decimal = 0D
+            Decimal.TryParse(level5(headerIndex),
+                             System.Globalization.NumberStyles.Any,
+                             System.Globalization.CultureInfo.InvariantCulture, price)
+
+            Dim profit As Decimal = 0D
+            Decimal.TryParse(level1(headerIndex),
+                             System.Globalization.NumberStyles.Any,
+                             System.Globalization.CultureInfo.InvariantCulture, profit)
+
+            For Each row As DataRow In dt.Rows
+                Dim qty As Decimal = 0D
+                Decimal.TryParse(Convert.ToString(row(dataColumnIndex)),
+                                 System.Globalization.NumberStyles.Any,
+                                 System.Globalization.CultureInfo.InvariantCulture, qty)
+
+                subtotal += (price + profit) * qty
+            Next
+        Next
+
+        Return subtotal
+    End Function
 
     Private Sub BuildGrid(ByVal DT As DataTable)
 
@@ -167,13 +249,12 @@ Partial Class NewOrder
         GridView1.DataSource = DT
         GridView1.DataBind()
     End Sub
+
     Private Function CreateEditableTemplate(columnName As String, colIndex As String) As TemplateField
         Dim tf As New TemplateField
         tf.HeaderText = columnName
         tf.ItemStyle.Width = Unit.Pixel(150)
-
         tf.ItemTemplate = New EditableTemplate(columnName, colIndex)
-
         Return tf
     End Function
 
@@ -207,29 +288,6 @@ Partial Class NewOrder
         HttpContext.Current.Session("MyTable") = dt
         clTemp.lcObject = dt
     End Sub
-
-
-    'Protected Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
-    '    'Dim DT As New Data.DataTable
-    '    'DT = CType(clTemp.lcObject, DataTable)
-    '    Dim dt As DataTable =
-    '    CType(HttpContext.Current.Session("MyTable"), DataTable)
-
-    '    Dim DC As New DataColumn
-    '    dt.Columns.Add(DC)
-
-    '    clTemp.lcObject = dt
-
-    '    HeaderLevel1.Add("Profit")
-    '    HeaderLevel2.Add("Total")
-    '    HeaderLevel3.Add("NoOfItems")
-    '    HeaderLevel4.Add("Item")
-    '    HeaderLevel5.Add("Price")
-
-
-    '    LoadFromObject()
-
-    '+End Sub
 
     Protected Sub GridView1_RowCreated(sender As Object, e As GridViewRowEventArgs)
 
@@ -311,17 +369,13 @@ Partial Class NewOrder
 
             Next
 
-
             '========================
             ' SECOND HEADER ROW
             '========================
             Dim h2 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
-
-            ' Only for grouped column(s)
             For i As Integer = 5 To colCount - 1
                 h2.Cells.Add(CreateEditableHeaderCell(HeaderLevel2(i - 1), i - 1, 2))
             Next
-
 
             '========================
             ' THIRD HEADER ROW
@@ -331,7 +385,6 @@ Partial Class NewOrder
                 h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i - 1), i - 1, 3))
             Next
 
-
             '========================
             ' FOURTH HEADER ROW
             '========================
@@ -340,15 +393,13 @@ Partial Class NewOrder
                 h4.Cells.Add(CreateEditableHeaderCell(HeaderLevel4(i - 1), i - 1, 4))
             Next
 
-
             '========================
-            ' Fifthe HEADER ROW
+            ' FIFTH HEADER ROW
             '========================
             Dim h5 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
             For i As Integer = 5 To colCount - 1
                 h5.Cells.Add(CreateEditableHeaderCell(HeaderLevel5(i - 1), i - 1, 5))
             Next
-
 
             Dim insertRowIndex As Integer = 0
 
@@ -366,7 +417,6 @@ Partial Class NewOrder
         End If
 
     End Sub
-
 
     <WebMethod()>
     Public Shared Sub SaveHeader(colIndex As Integer, level As Integer, value As String)
@@ -417,31 +467,22 @@ Partial Class NewOrder
     Private Function CreateEditableHeaderCell(text As String, colIndex As Integer, level As Integer) As TableCell
 
         Dim cell As New TableCell()
-
-        ' ===== FIXED CELL WIDTH =====
         cell.Width = Unit.Pixel(100)
         cell.HorizontalAlign = HorizontalAlign.Center
         cell.VerticalAlign = VerticalAlign.Middle
 
-        ' ===== STYLE BASED ON LEVEL =====
         Select Case level
-
             Case 1 ' Profit
                 cell.BackColor = Drawing.Color.Orange
                 cell.ForeColor = Drawing.Color.Black
-
             Case 2 ' Total
                 cell.BackColor = Drawing.Color.Yellow
                 cell.ForeColor = Drawing.Color.Black
-
-            Case 4 ' Price
+            Case 4 ' Item name
                 cell.BackColor = Drawing.Color.Black
                 cell.ForeColor = Drawing.Color.White
-
         End Select
 
-
-        ' Wrapper
         Dim wrapper As New HtmlGenericControl("div")
         wrapper.Attributes("class") = "cell-wrapper"
         wrapper.Attributes("onclick") = "editCell(this)"
@@ -452,7 +493,6 @@ Partial Class NewOrder
         wrapper.Style("width") = "100%"
         wrapper.Style("text-align") = "center"
 
-        ' Label
         Dim lbl As New Label()
         lbl.ID = "lblHeader_" & level & "_" & colIndex
         lbl.Text = text
@@ -461,12 +501,11 @@ Partial Class NewOrder
         lbl.Style("width") = "100%"
         lbl.Style("text-align") = "center"
 
-        ' TextBox
         Dim txt As New TextBox()
         txt.ID = "txtHeader_" & level & "_" & colIndex
         txt.Text = text
         txt.Style("display") = "none"
-        txt.Width = Unit.Pixel(90)   ' ===== TEXTBOX WIDTH 90px =====
+        txt.Width = Unit.Pixel(90)
         txt.Style("text-align") = "center"
         txt.BackColor = cell.BackColor
         txt.ForeColor = cell.ForeColor
@@ -559,12 +598,21 @@ Partial Class NewOrder
         clTemp.lcObject = dt
 
         LoadFromObject()
+        RefreshSubtotal()
+    End Sub
+
+    ' -----------------------------------------------------------------------
+    ' RefreshSubtotal — call after any server-side data change (delete row /
+    ' delete column) so litSubtotal reflects the updated data immediately,
+    ' without waiting for a JS PageMethod round-trip.
+    ' -----------------------------------------------------------------------
+    Private Sub RefreshSubtotal()
+        litSubtotal.Text = CalculateSubtotal().ToString("0.000")
     End Sub
 
     Private Sub RemoveHeaderValue(values As List(Of String), index As Integer)
         If values Is Nothing Then Exit Sub
         If index < 0 OrElse index >= values.Count Then Exit Sub
-
         values.RemoveAt(index)
     End Sub
 
@@ -572,7 +620,6 @@ Partial Class NewOrder
         If row Is Nothing Then Return String.Empty
         If row.Table Is Nothing OrElse Not row.Table.Columns.Contains(columnName) Then Return String.Empty
         If row.IsNull(columnName) Then Return String.Empty
-
         Return Convert.ToString(row(columnName)).Trim()
     End Function
 
@@ -680,13 +727,7 @@ Partial Class NewOrder
         Next
     End Sub
 
-
     Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-
-        'Dim A() As String {"A","B","C"}
-
-        'Dim B As String = encryNdecry.Encrypt(A()))
-
     End Sub
 
     Protected Sub LinkButton3_Click(sender As Object, e As EventArgs) Handles LinkButton3.Click
@@ -722,10 +763,6 @@ Partial Class NewOrder
             .ColumnsWidth = New Double() {1.0, 2.5, 1.0, 1.0}
         End With
 
-
-        'Array: SQL to select items, Title of the Page, HideID Y/N
-        'Dim arrSelectItemsParameters() As String = {SQL, "Select Items", "YNNN", "NNYY"}
-        'Dim SelectItemsParameters As String = encryNdecry.Encrypt(arrSelectItemsParameters)
         Dim SelectItemsParameters As String = encryNdecry.EncryptObject(Of clsListProperties)(ListProperties)
         VendorPopupHelper.RegisterVendorPopup(Me,
                                       lnkBttnAddItems,
@@ -736,10 +773,9 @@ Partial Class NewOrder
                                       "Select Adj",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
-
     End Sub
+
     Protected Sub hfRowIndex_ValueChanged(sender As Object, e As EventArgs) Handles hfRowIndex.ValueChanged
-        'MsgBox(hfRowIndex.Value)
     End Sub
 
     Private Property HeaderLevel1 As List(Of String)
@@ -777,7 +813,6 @@ Partial Class NewOrder
             Session("HeaderLevel3") = value
         End Set
     End Property
-
 
     Private Property HeaderLevel4 As List(Of String)
         Get
@@ -819,15 +854,12 @@ Partial Class NewOrder
 
     Private Function EnsureAddRdcTable(table As DataTable) As DataTable
         Dim dt As DataTable = table
-
         If dt Is Nothing Then
             dt = New DataTable()
         End If
-
         If Not dt.Columns.Contains(AddRdcRowKeyColumn) Then
             dt.Columns.Add(AddRdcRowKeyColumn, GetType(String))
         End If
-
         Return dt
     End Function
 
@@ -845,7 +877,6 @@ Partial Class NewOrder
             ViewState("AddRdcTable") = dt
             GridView2.DataSource = dt.DefaultView
         End If
-
         GridView2.DataBind()
     End Sub
 
@@ -874,8 +905,6 @@ Partial Class NewOrder
 
         BindAddRdcGrid(dt)
         LoadFromObject()
-
-        'TextBox5.Text = String.Format("{0} - {1} ({2}: {3})", selectedRow.Item(0).ToString, selectedRow.Item(1).ToString, selectedRow.Item(2).ToString, selectedRow.Item(3).ToString)
     End Sub
 
     Protected Sub GridView2_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView2.RowCommand
@@ -894,7 +923,6 @@ Partial Class NewOrder
         dt.Rows.Remove(dr)
         BindAddRdcGrid(dt)
     End Sub
-
 
     Protected Sub lnkBtnAddMembers_Click(sender As Object, e As EventArgs) Handles lnkBtnAddMembers.Click
         Dim selectedItems As List(Of Dictionary(Of String, Object)) =
@@ -949,9 +977,7 @@ Partial Class NewOrder
         LoadFromObject()
     End Sub
 
-
     Protected Sub ImageButton2_Click(sender As Object, e As ImageClickEventArgs)
-
     End Sub
 
     Protected Sub GridView1_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView1.RowCommand
@@ -963,6 +989,7 @@ Partial Class NewOrder
             If commandParts.Length > 0 AndAlso Integer.TryParse(commandParts(0), headerColumnIndex) Then
                 RemoveDynamicColumn(headerColumnIndex)
             End If
+
             Exit Sub
         End If
 
@@ -985,11 +1012,10 @@ Partial Class NewOrder
         End If
 
         LoadFromObject()
+        RefreshSubtotal()
     End Sub
 
     Protected Sub LinkButton4_Click(sender As Object, e As EventArgs) Handles LinkButton4.Click
-        'Dim DT As New Data.DataTable
-        'DT = CType(clTemp.lcObject, DataTable)
         Dim dt As DataTable =
         CType(HttpContext.Current.Session("MyTable"), DataTable)
 
@@ -1005,9 +1031,9 @@ Partial Class NewOrder
         HeaderLevel5.Add("Price")
         HeaderItemIds.Add("")
 
-
         LoadFromObject()
     End Sub
+
     Protected Sub lnkBttnAddItems_Click(sender As Object, e As EventArgs) Handles lnkBttnAddItems.Click
         Dim selectedItems = TryCast(
     VendorPopupHelper.GetPopupReturnValue(Me, "SelectedItems"),
@@ -1120,59 +1146,46 @@ Public Class EditableTemplate
 
     Public Sub InstantiateIn(container As Control) Implements ITemplate.InstantiateIn
 
-        ' Create wrapper div
         Dim wrapper As New HtmlGenericControl("div")
         wrapper.Attributes("class") = "cell-wrapper data-cell"
         wrapper.Attributes("onclick") = "editCell(this)"
         wrapper.Attributes("data-column") = _columnName
         wrapper.Attributes("data-columnindex") = _columnIndex.ToString()
 
-        ' Create label and textbox
         Dim lbl As New Label()
         Dim txt As New TextBox()
 
-        ' Temporarily assign generic IDs; will update in DataBinding
         lbl.ID = "lblValue"
         txt.ID = "txtValue"
 
-        ' TextBox style & events
         txt.Style("display") = "none"
         txt.Style("width") = "85%"
         txt.Attributes("onblur") = "saveCell(this)"
         txt.Attributes("onkeydown") = "return handleEnter(event, this);"
 
-        ' Bind EVERYTHING in ONE place
         AddHandler wrapper.DataBinding, Sub(sender As Object, e As EventArgs)
 
                                             Dim w = CType(sender, HtmlGenericControl)
                                             Dim row = CType(w.NamingContainer, GridViewRow)
                                             Dim rowIndex As Integer = row.RowIndex
 
-                                            ' --- Generate unique IDs ---
                                             lbl.ID = "lblValue_" & rowIndex & "_" & _columnIndex
                                             txt.ID = "txtValue_" & rowIndex & "_" & _columnIndex
 
-                                            ' Get the value from the DataItem
                                             Dim valueObj = DataBinder.Eval(row.DataItem, _columnName)
                                             Dim value As String = If(valueObj Is DBNull.Value, "", valueObj.ToString())
 
                                             lbl.Text = value
                                             txt.Text = value
 
-                                            ' Store row/column info for JavaScript
                                             w.Attributes("data-rowindex") = rowIndex.ToString()
                                             w.Attributes("data-column") = _columnName
 
                                         End Sub
 
-        ' Add controls to wrapper
         wrapper.Controls.Add(lbl)
         wrapper.Controls.Add(txt)
         container.Controls.Add(wrapper)
 
     End Sub
 End Class
-
-
-
-
