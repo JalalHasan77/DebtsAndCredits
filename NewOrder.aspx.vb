@@ -35,11 +35,6 @@ Partial Class NewOrder
             TextBox1.Text = hdnSelectedVendorText.Value
         End If
 
-
-
-        'Dim arrSelectVendersParameters() As String = {", "Select A Vender"}
-        'Dim SelectVendersParameters As String = encryNdecry.Encrypt(arrSelectVendersParameters)
-
         Dim ListParameters As New clsListProperties
         ListParameters.SQL = "Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders"
         ListParameters.FormTitle = "Select Vendor"
