@@ -10,6 +10,8 @@ Imports System.Web.UI.WebControls
 Partial Class NewOrder
     Inherits System.Web.UI.Page
     Dim encryNdecry As New EncryDecry
+    Public GrandTotal As Decimal = 0
+    Public Subtotal As Decimal
 
     Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
         If HttpContext.Current.Session("MyTable") Is Nothing Then
@@ -24,6 +26,9 @@ Partial Class NewOrder
 
         If IsPostBack Then
             PersistPostedGridValues()
+        Else
+            litSubtotal.Text = Subtotal.ToString("0.000")
+            litGrandTotal.Text = GrandTotal.ToString("0.000")
         End If
 
         If Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then

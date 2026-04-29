@@ -61,31 +61,87 @@
             direction: ltr;
         }
 
-            .exp-rdc-row {
+            .section-wrapper {
         width: 100%;
-        text-align: left;
+        margin-bottom: 16px;
+    }
+
+    .section-title {
+        font-family: Arial;
+        font-size: 16px;
+        font-weight: bold;
+        color: #2f4f6f;
+        margin: 0 0 6px 8px;
+    }
+
+    .section-panel {
+        border: 1px solid #cfd8e3;
+        border-radius: 14px;
+        padding: 14px;
+        background-color: #ffffff;
+        box-sizing: border-box;
+    }
+
+    .items-links-row {
+        margin-bottom: 12px;
+    }
+
+    .items-grid-wrap {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        overflow-x: auto;
+    }
+
+    .exp-rdc-row {
+        width: 100%;
         margin-top: 10px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        text-align: left;
+        box-sizing: border-box;
     }
 
     .exp-rdc-box {
-        display: block;
+        width: 66.6667%;
         text-align: left;
+        box-sizing: border-box;
+    }
+
+    .calc-box {
+        width: 33.3333%;
+        text-align: left;
+        box-sizing: border-box;
     }
 
     .exp-rdc-link {
         display: inline-block;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
     }
 
-    .exp-rdc-grid {
+    .exp-rdc-grid,
+    .calc-grid {
         border-collapse: collapse;
         table-layout: fixed;
+        width: 100%;
     }
 
     .exp-rdc-grid .col-action {
-        width: 1%;
+        width: 36px;
+        min-width: 36px;
+        max-width: 36px;
         white-space: nowrap;
         text-align: center;
+        padding-left: 6px;
+        padding-right: 6px;
+        box-sizing: border-box;
+    }
+
+    .exp-rdc-grid .col-action input,
+    .exp-rdc-grid .col-action img {
+        display: block;
+        margin: 0 auto;
     }
 
     .exp-rdc-grid .col-80 {
@@ -95,6 +151,14 @@
         text-align: center;
     }
 
+    .calc-grid .col-payment {
+        width: 65%;
+    }
+
+    .calc-grid .col-amount {
+        width: 35%;
+        text-align: center;
+    }
 </style>
 
     <script type="text/javascript">
@@ -476,155 +540,223 @@
     <asp:Label ID="Label7" runat="server" Font-Bold="True" Font-Names="Arial" Font-Size="20px" Text="Grande Total:"></asp:Label>
 </div>
                                         <br />
-<div class="row">
-    <asp:LinkButton ID="lnkBtnAddMembers" runat="server" Font-Names="Arial" Font-Size="14px">Add Members
-    </asp:LinkButton>
+<div class="section-wrapper">
+    <div class="section-title">Items</div>
+    <div class="section-panel">
+        <div class="row items-links-row">
+            <asp:LinkButton ID="lnkBtnAddMembers" runat="server" Font-Names="Arial" Font-Size="14px">Add Members
+            </asp:LinkButton>
 
-    <span style="display:inline-block; width:15px;"></span>
+            <span style="display:inline-block; width:15px;"></span>
 
-    <asp:LinkButton ID="lnkBttnAddItems" runat="server" Font-Names="Arial" Font-Size="14px">Add Items</asp:LinkButton>
+            <asp:LinkButton ID="lnkBttnAddItems" runat="server" Font-Names="Arial" Font-Size="14px">Add Items</asp:LinkButton>
 
-    <span style="display:inline-block; width:15px;"></span>
+            <span style="display:inline-block; width:15px;"></span>
 
-<asp:LinkButton ID="LinkButton4"
-                runat="server"
-                Font-Names="Arial"
-                Font-Size="14px"
-                OnClientClick="document.getElementById('<%= Button2.ClientID %>').click(); return false;">
-    Add one Column
-</asp:LinkButton>
+            <asp:LinkButton ID="LinkButton4"
+                            runat="server"
+                            Font-Names="Arial"
+                            Font-Size="14px"
+                ClientIDMode="Static"   
+                            OnClientClick="document.getElementById('<%= Button2.ClientID %>').click(); return false;">
+                Add one Column
+            </asp:LinkButton>
+        </div>
+
+        <div class="items-grid-wrap">
+            <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated" Font-Size="12px">
+                <AlternatingRowStyle BackColor="White" />
+                <Columns>
+                    <asp:TemplateField>
+                        <ItemTemplate>
+                            <asp:ImageButton ID="ImageButton2" runat="server" ImageUrl="~/Images/Trash16x16.png" OnClick="ImageButton2_Click" />
+                        </ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="MemberName" />
+                    <asp:TemplateField>
+                        <ItemTemplate>
+                            <div class="cell-wrapper" onclick="editCell(this)">
+                                <asp:Label ID="lblValue" runat="server"
+                                    Text='' />
+
+                                <asp:TextBox ID="txtValue" runat="server"
+                                    Text=''
+                                    Style="display:none; width:85%;"
+                                    onblur="saveCell(this)"
+                                    onkeydown="return handleEnter(event, this);" />
+                            </div>
+                        </ItemTemplate>
+                        <ItemStyle Width="150px" />
+                    </asp:TemplateField>
+                </Columns>
+                <EditRowStyle BackColor="#2461BF" />
+                <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
+                <RowStyle BackColor="#EFF3FB" />
+                <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
+                <SortedAscendingCellStyle BackColor="#F5F7FB" />
+                <SortedAscendingHeaderStyle BackColor="#6D95E1" />
+                <SortedDescendingCellStyle BackColor="#E9EBEF" />
+                <SortedDescendingHeaderStyle BackColor="#4870BE" />
+            </asp:GridView>
+        </div>
+    </div>
 </div>
-
-                                        <div style="display: flex;flex-direction: row; justify-content:flex-start">
-
-                                        <asp:GridView ID="GridView1" runat="server" CellPadding="4" ForeColor="#333333" Font-Names="Arial" AutoGenerateColumns="False" OnRowCreated="GridView1_RowCreated" Font-Size="12px">
-                                            <AlternatingRowStyle BackColor="White" />
-                                            <Columns>
-                                                <asp:TemplateField>
-                                                    <ItemTemplate>
-                                                        <asp:ImageButton ID="ImageButton2" runat="server" ImageUrl="~/Images/Trash16x16.png" OnClick="ImageButton2_Click" />
-                                                    </ItemTemplate>
-                                                </asp:TemplateField>
-                                                <asp:BoundField DataField="MemberName" />
-                                                <asp:TemplateField>
-                                                        <ItemTemplate>
-                                                            <div class="cell-wrapper" onclick="editCell(this)">
-                                                                <asp:Label ID="lblValue" runat="server"
-                                                                    Text='' />
-
-                                                                <asp:TextBox ID="txtValue" runat="server"
-                                                                    Text=''
-                                                                    Style="display:none; width:85%;"
-                                                                    onblur="saveCell(this)"
-                                                                    onkeydown="return handleEnter(event, this);" />
-                                                            </div>
-                                                        </ItemTemplate>
-                                                        <ItemStyle Width="150px" />
-                                                </asp:TemplateField>
-                                            </Columns>
-                                            <EditRowStyle BackColor="#2461BF" />
-                                            <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                                            <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-                                            <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
-                                            <RowStyle BackColor="#EFF3FB" />
-                                            <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
-                                            <SortedAscendingCellStyle BackColor="#F5F7FB" />
-                                            <SortedAscendingHeaderStyle BackColor="#6D95E1" />
-                                            <SortedDescendingCellStyle BackColor="#E9EBEF" />
-                                            <SortedDescendingHeaderStyle BackColor="#4870BE" />
-                                        </asp:GridView>
-                                       </div>
                                        <div class="row exp-rdc-row">
     <div class="exp-rdc-box">
-        <asp:LinkButton ID="btnAddExpRdc"
-                        runat="server"
-                        CssClass="exp-rdc-link"
-                        Font-Names="Arial"
-                        Font-Size="14px">
-            Add Other Expenses/Reduction
-        </asp:LinkButton>
+        <div class="section-title">Other Additions and Reductions</div>
+        <div class="section-panel">
+            <asp:LinkButton ID="btnAddExpRdc"
+                            runat="server"
+                            CssClass="exp-rdc-link"
+                            Font-Names="Arial"
+                            Font-Size="14px">
+                Add Other Expenses/Reduction
+            </asp:LinkButton>
 
-        <asp:GridView ID="GridView2"
-              runat="server"
-              CssClass="exp-rdc-grid"
-              CellPadding="4"
-              ForeColor="#333333"
-              Font-Names="Arial"
-              Font-Size="12px"
-              AutoGenerateColumns="False"
-              OnRowCommand="GridView2_RowCommand">
-    <AlternatingRowStyle BackColor="White" />
+            <asp:GridView ID="GridView2"
+                  runat="server"
+                  CssClass="exp-rdc-grid"
+                  CellPadding="4"
+                  ForeColor="#333333"
+                  Font-Names="Arial"
+                  Font-Size="12px"
+                  AutoGenerateColumns="False"
+                  OnRowCommand="GridView2_RowCommand" ShowHeaderWhenEmpty="True">
+        <AlternatingRowStyle BackColor="White" />
 
-    <Columns>
-        <asp:TemplateField HeaderStyle-CssClass="col-action"
-                           ItemStyle-CssClass="col-action">
-            <ItemTemplate>
-                <asp:ImageButton ID="ImageButton1"
-                                 runat="server"
-                                 ImageUrl="~/Images/Trash16x16.png"
-                                 CommandName="DeleteRow"
-                                 CommandArgument='<%# Eval("__RowGuid") %>'
-                                 CausesValidation="False"
-                                 ToolTip="Delete" />
-            </ItemTemplate>
+        <Columns>
+            <asp:TemplateField HeaderStyle-CssClass="col-action"
+                               ItemStyle-CssClass="col-action"
+                               HeaderStyle-Width="36px"
+                               ItemStyle-Width="36px">
+                <ItemTemplate>
+                    <asp:ImageButton ID="ImageButton1"
+                                     runat="server"
+                                     ImageUrl="~/Images/Trash16x16.png"
+                                     CommandName="DeleteRow"
+                                     CommandArgument='<%# Eval("__RowGuid") %>'
+                                     CausesValidation="False"
+                                     ToolTip="Delete" />
+                </ItemTemplate>
 
-<HeaderStyle CssClass="col-action"></HeaderStyle>
+    <HeaderStyle CssClass="col-action"></HeaderStyle>
 
-<ItemStyle CssClass="col-action"></ItemStyle>
-        </asp:TemplateField>
+    <ItemStyle CssClass="col-action"></ItemStyle>
+            </asp:TemplateField>
 
-        <asp:BoundField DataField="adjusmentName"
-                        HeaderText="Title"
-                        HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" >
+            <asp:BoundField DataField="adjusmentName"
+                            HeaderText="Title"
+                            HeaderStyle-CssClass="col-80"
+                            ItemStyle-CssClass="col-80" >
 
-<HeaderStyle CssClass="col-80"></HeaderStyle>
+    <HeaderStyle CssClass="col-80"></HeaderStyle>
 
-<ItemStyle CssClass="col-80"></ItemStyle>
-        </asp:BoundField>
+    <ItemStyle CssClass="col-80"></ItemStyle>
+            </asp:BoundField>
 
-        <asp:BoundField DataField="adjusmentType"
-                        HeaderText="Inc or Dec"
-                        HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" >
+            <asp:BoundField DataField="adjusmentType"
+                            HeaderText="Inc or Dec"
+                            HeaderStyle-CssClass="col-80"
+                            ItemStyle-CssClass="col-80" >
 
-<HeaderStyle CssClass="col-80"></HeaderStyle>
+    <HeaderStyle CssClass="col-80"></HeaderStyle>
 
-<ItemStyle CssClass="col-80"></ItemStyle>
-        </asp:BoundField>
+    <ItemStyle CssClass="col-80"></ItemStyle>
+            </asp:BoundField>
 
-        <asp:BoundField DataField="adjusmentCalculation"
-                        HeaderText="Fixed or %"
-                        HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" >
+            <asp:BoundField DataField="adjusmentCalculation"
+                            HeaderText="Fixed or %"
+                            HeaderStyle-CssClass="col-80"
+                            ItemStyle-CssClass="col-80" >
 
-<HeaderStyle CssClass="col-80"></HeaderStyle>
+    <HeaderStyle CssClass="col-80"></HeaderStyle>
 
-<ItemStyle CssClass="col-80"></ItemStyle>
-        </asp:BoundField>
+    <ItemStyle CssClass="col-80"></ItemStyle>
+            </asp:BoundField>
 
-        <asp:BoundField DataField="CalculationAmount"
-                        HeaderText="Amount"
-                        HeaderStyle-CssClass="col-80"
-                        ItemStyle-CssClass="col-80" >
-<HeaderStyle CssClass="col-80"></HeaderStyle>
+            <asp:BoundField DataField="CalculationAmount"
+                            HeaderText="Amount"
+                            HeaderStyle-CssClass="col-80"
+                            ItemStyle-CssClass="col-80" >
+    <HeaderStyle CssClass="col-80"></HeaderStyle>
 
-<ItemStyle CssClass="col-80"></ItemStyle>
-        </asp:BoundField>
-        <asp:BoundField DataField="Distrbution" HeaderText="Distribution" />
-    </Columns>
+    <ItemStyle CssClass="col-80"></ItemStyle>
+            </asp:BoundField>
+            <asp:BoundField DataField="Distrbution" HeaderText="Distribution" />
+        </Columns>
 
-    <EditRowStyle BackColor="#2461BF" />
-    <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-    <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
-    <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
-    <RowStyle BackColor="#EFF3FB" />
-    <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
-    <SortedAscendingCellStyle BackColor="#F5F7FB" />
-    <SortedAscendingHeaderStyle BackColor="#6D95E1" />
-    <SortedDescendingCellStyle BackColor="#E9EBEF" />
-    <SortedDescendingHeaderStyle BackColor="#4870BE" />
-</asp:GridView>
+        <EditRowStyle BackColor="#2461BF" />
+        <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+        <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+        <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
+        <RowStyle BackColor="#EFF3FB" />
+        <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
+        <SortedAscendingCellStyle BackColor="#F5F7FB" />
+        <SortedAscendingHeaderStyle BackColor="#6D95E1" />
+        <SortedDescendingCellStyle BackColor="#E9EBEF" />
+        <SortedDescendingHeaderStyle BackColor="#4870BE" />
+    </asp:GridView>
+        </div>
+    </div>
+    <div class="calc-box">
+        <div class="section-title">Calculations</div>
+        <div class="section-panel">
+<%--            <asp:GridView ID="GridView3"
+                          runat="server"
+                          CssClass="calc-grid"
+                          CellPadding="4"
+                          ForeColor="#333333"
+                          Font-Names="Arial"
+                          Font-Size="12px"
+                          AutoGenerateColumns="False"
+                          ShowHeaderWhenEmpty="True">
+                <AlternatingRowStyle BackColor="White" />
+                <Columns>
+                    <asp:BoundField DataField="PaymentType"
+                                    HeaderText="Payment type"
+                                    HeaderStyle-CssClass="col-payment"
+                                    ItemStyle-CssClass="col-payment" />
+                    <asp:BoundField DataField="Amount"
+                                    HeaderText="Amount"
+                                    HeaderStyle-CssClass="col-amount"
+                                    ItemStyle-CssClass="col-amount" />
+                </Columns>
+                <EditRowStyle BackColor="#2461BF" />
+                <FooterStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                <HeaderStyle BackColor="#507CD1" Font-Bold="True" ForeColor="White" />
+                <PagerStyle BackColor="#2461BF" ForeColor="White" HorizontalAlign="Center" />
+                <RowStyle BackColor="#EFF3FB" />
+                <SelectedRowStyle BackColor="#D1DDF1" Font-Bold="True" ForeColor="#333333" />
+                <SortedAscendingCellStyle BackColor="#F5F7FB" />
+                <SortedAscendingHeaderStyle BackColor="#6D95E1" />
+                <SortedDescendingCellStyle BackColor="#E9EBEF" />
+                <SortedDescendingHeaderStyle BackColor="#4870BE" />
+            </asp:GridView>--%>
+            <div style="width:300px; font-family:Arial;">
+    <asp:Repeater ID="rptSummary" runat="server">
+        <ItemTemplate>
+            <div style="display:flex; justify-content:space-between; padding:2px 0;">
+                <span><%# Eval("Label") %></span>
+                <span style="text-align:right;"><%# Eval("Value", "{0:0.000}") %></span>
+            </div>
+        </ItemTemplate>
+    </asp:Repeater>
+
+    <div style="display:flex; justify-content:space-between; padding:2px 0;">
+        <span>Subtotal</span>
+        <asp:Literal ID="litSubtotal" runat="server" />
+    </div>
+
+    <hr />
+
+    <div style="display:flex; justify-content:space-between; padding:2px 0; font-weight:bold;">
+        <span>Grand Total</span>
+        <asp:Literal ID="litGrandTotal" runat="server" />
+    </div>
+</div>
+        </div>
     </div>
 </div>
                                     </td>
