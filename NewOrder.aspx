@@ -190,6 +190,7 @@
             // calculateColumn and iterateRowCells are pure DOM operations — run immediately.
             calculateColumn(colIndex);
             iterateRowCells(rowIndex);
+            refreshTotalIn();
 
             // SaveCell must complete first so the session has the new value
             // before RecalculateSubtotal reads it.
@@ -413,16 +414,130 @@
         }
 
         // =====================================================
+        // Editable NetValue cell in GridView2
+        // =====================================================
+        function editNetCell(div) {
+            var span = div.querySelector("span");
+            var txt = div.querySelector("input");
+            if (txt.style.display === "inline") return;
+            txt.value = span.innerText.trim();
+            span.style.display = "none";
+            txt.style.display = "inline";
+            txt.focus();
+            txt.select();
+        }
+
+        function saveNetValue(input) {
+            var div = input.parentElement;
+            var span = div.querySelector("span");
+            var guid = div.getAttribute("data-rowguid");
+            var val = input.value.trim();
+
+            // 1. Update the GridView2 cell display
+            span.innerText = val;
+            input.style.display = "none";
+            span.style.display = "inline";
+
+            // 2. Update the matching rptSummary value span by rowguid
+            var summaryRow = document.querySelector(
+                "[data-rowguid='" + guid + "'].rpt-summary-row"
+            );
+            if (summaryRow) {
+                var summaryVal = summaryRow.querySelector(".rpt-summary-value");
+                if (summaryVal) summaryVal.innerText = parseFloat(val).toFixed(3);
+            }
+
+            // 3. Persist to server, then refresh Grand Total
+            PageMethods.SaveNetValue(guid, val,
+                function () { refreshGrandTotal(); },
+                function (e) { console.log("SaveNetValue error: " + e.get_message()); }
+            );
+        }
+
+        // =====================================================
+        // Sums all rptSummary values + Subtotal → Grand Total,
+        // then mirrors it to Label8.
+        // =====================================================
+        function refreshGrandTotal() {
+            var total = 0;
+
+            document.querySelectorAll(".rpt-summary-value").forEach(function (el) {
+                total += parseFloat(el.innerText) || 0;
+            });
+
+            var subEl = document.getElementById("litSubtotal");
+            if (subEl) total += parseFloat(subEl.innerText) || 0;
+
+            var fmt = total.toFixed(3);
+
+            var gtEl = document.getElementById("litGrandTotal");
+            if (gtEl) gtEl.innerText = fmt;
+
+            var lb8 = document.getElementById("Label8");
+            if (lb8) lb8.innerText = fmt;
+
+            refreshTotalIn();
+        }
+
+        // =====================================================
+        // Sums Deposit - Debt across all member rows → Total In.
+        // Reads live DOM: instant on cell edit / row delete.
+        // =====================================================
+        function refreshTotalIn() {
+            var deposit = 0;
+            var debt = 0;
+
+            document.querySelectorAll(".cell-wrapper[data-column='Deposit'] span").forEach(function (el) {
+                deposit += parseFloat(el.innerText) || 0;
+            });
+
+            document.querySelectorAll(".cell-wrapper[data-column='Debt'] span").forEach(function (el) {
+                debt += parseFloat(el.innerText) || 0;
+            });
+
+            var fmt = (deposit - debt).toFixed(3);
+
+            var tiEl = document.getElementById("litTotalIn");
+            if (tiEl) tiEl.innerText = fmt;
+
+            var lb10 = document.getElementById("Label10");
+            if (lb10) lb10.innerText = fmt;
+
+            updateBalanceBadge();
+        }
+
+        // =====================================================
+        // Compares Grand Total (Label8) vs Total In (Label10).
+        // Updates badge text and background — works both from JS
+        // (client-side changes) and is also set server-side on
+        // every postback so it survives GridView2 row delete.
+        // =====================================================
+        function updateBalanceBadge() {
+            var badge = document.getElementById("balanceBadge");
+            if (!badge) return;
+
+            var gt = parseFloat((document.getElementById("Label8") || {}).innerText) || 0;
+            var ti = parseFloat((document.getElementById("Label10") || {}).innerText) || 0;
+
+            if (Math.abs(gt - ti) < 0.0005) {
+                badge.innerText = "Balanced";
+                badge.style.backgroundColor = "#add8e6";
+            } else {
+                badge.innerText = "Unbalanced";
+                badge.style.backgroundColor = "#ffb3b3";
+            }
+        }
+
+        // =====================================================
         // Recalculates Subtotal live without a full postback.
         // Called from saveCell() and saveHeader().
-        // Formula per column: (Price + Profit) * NoOfItems
-        // where NoOfItems = sum of all member quantities.
         // =====================================================
         function recalculateSubtotal() {
             PageMethods.RecalculateSubtotal(
                 function (result) {
                     var el = document.getElementById('litSubtotal');
                     if (el) el.innerText = result;
+                    refreshGrandTotal();
                 },
                 function (err) {
                     console.log('Subtotal error: ' + err.get_message());
@@ -554,10 +669,23 @@
 
 </div>
                                         <br />
-<div class="row">
-    <asp:Label ID="Label7" runat="server" Font-Bold="True" Font-Names="Arial" Font-Size="20px" Text="Grande Total:"></asp:Label>
+<div style="display:flex; align-items:stretch; gap:16px;">
+    <div>
+        <div class="row">
+            <asp:Label ID="Label7" runat="server" Font-Bold="True" Font-Names="Arial" Font-Size="20px" Text="Grande Total:" style="display:inline-block; width:160px;"></asp:Label>
+            <asp:Label ID="Label8" runat="server" ClientIDMode="Static" Font-Bold="True" Font-Names="Arial" Font-Size="20px" Text="0.000" style="margin-left:12px;"></asp:Label>
+        </div>
+        <div class="row">
+            <asp:Label ID="Label9" runat="server" Font-Bold="True" Font-Names="Arial" Font-Size="20px" Text="Total In:" style="display:inline-block; width:160px;"></asp:Label>
+            <asp:Label ID="Label10" runat="server" ClientIDMode="Static" Font-Bold="True" Font-Names="Arial" Font-Size="20px" Text="0.000" style="margin-left:12px;"></asp:Label>
+        </div>
+    </div>
+    <asp:Label ID="balanceBadge" runat="server" ClientIDMode="Static"
+        Text="Balanced"
+        style="display:flex; align-items:center; justify-content:center; padding:0 22px; border-radius:18px; background-color:#add8e6; font-family:Arial; font-size:18px; font-weight:bold; color:#1a1a1a; min-width:120px; text-align:center; transition:background-color 0.3s;">
+    </asp:Label>
 </div>
-                                        <br />
+    <br />
 <div class="section-wrapper">
     <div class="section-title">Items</div>
     <div class="section-panel">
@@ -705,6 +833,25 @@
     <ItemStyle CssClass="col-80"></ItemStyle>
             </asp:BoundField>
             <asp:BoundField DataField="Distrbution" HeaderText="Distribution" />
+
+            <asp:TemplateField HeaderText="Net Value"
+                               HeaderStyle-CssClass="col-80"
+                               ItemStyle-CssClass="col-80">
+                <HeaderStyle CssClass="col-80"></HeaderStyle>
+                <ItemStyle CssClass="col-80" HorizontalAlign="Center"></ItemStyle>
+                <ItemTemplate>
+                    <div class="gv2-net-cell"
+                         data-rowguid='<%# Eval("__RowGuid") %>'
+                         onclick="editNetCell(this)"
+                         style="cursor:pointer; padding:2px; text-align:center;">
+                        <span><%# Eval("NetValue") %></span>
+                        <input type="text"
+                               style="display:none; width:80px; text-align:right;"
+                               onblur="saveNetValue(this)"
+                               onkeydown="return handleEnter(event, this);" />
+                    </div>
+                </ItemTemplate>
+            </asp:TemplateField>
         </Columns>
 
         <EditRowStyle BackColor="#2461BF" />
@@ -724,17 +871,19 @@
         <div class="section-title">Calculations</div>
         <div class="section-panel">
             <%-- Calculations summary panel: div-based, Arial font, no <% %> code blocks --%>
-            <div style="width:300px; font-family:Arial;">
+            <div style="width:300px; font-family:Arial; font-size:16px;">
                 <asp:Repeater ID="rptSummary" runat="server">
                     <ItemTemplate>
-                        <div style="display:flex; justify-content:space-between; padding:2px 0;">
+                        <div class="rpt-summary-row"
+                             style="display:flex; justify-content:space-between; padding:2px 0; font-size:15px;"
+                             data-rowguid='<%# Eval("RowGuid") %>'>
                             <span><%# Eval("Label") %></span>
-                            <span style="text-align:right;"><%# Eval("Value", "{0:0.000}") %></span>
+                            <span class="rpt-summary-value" style="text-align:right;"><%# Eval("Value", "{0:0.000}") %></span>
                         </div>
                     </ItemTemplate>
                 </asp:Repeater>
 
-                <div style="display:flex; justify-content:space-between; padding:2px 0;">
+                <div style="display:flex; justify-content:space-between; padding:2px 0; font-size:15px;">
                     <span>Subtotal</span>
                     <%-- asp:Label renders as <span id="litSubtotal"> so JS getElementById works --%>
                     <asp:Label ID="litSubtotal" runat="server" ClientIDMode="Static" Text="0.000" />
@@ -742,9 +891,14 @@
 
                 <hr />
 
-                <div style="display:flex; justify-content:space-between; padding:2px 0; font-weight:bold;">
+                <div style="display:flex; justify-content:space-between; padding:2px 0; font-weight:bold; font-size:17px;">
                     <span>Grand Total</span>
-                    <asp:Literal ID="litGrandTotal" runat="server" />
+                    <asp:Label ID="litGrandTotal" runat="server" ClientIDMode="Static" Text="0.000" />
+                </div>
+
+                <div style="display:flex; justify-content:space-between; padding:2px 0; font-size:15px;">
+                    <span>Total In</span>
+                    <asp:Label ID="litTotalIn" runat="server" ClientIDMode="Static" Text="0.000" />
                 </div>
             </div>
         </div>

@@ -25,11 +25,11 @@ Partial Class NewOrder
 
         If IsPostBack Then
             PersistPostedGridValues()
+            ' Keep litSubtotal, rptSummary and litGrandTotal current for all postback paths.
+            RefreshSubtotal()
         Else
-            ' First load only — on postbacks, delete handlers call RefreshSubtotal()
-            ' themselves AFTER the data has changed, so setting it here would be stale.
-            litSubtotal.Text = CalculateSubtotal().ToString("0.000")
-            litGrandTotal.Text = GrandTotal.ToString("0.000")
+            ' First load only
+            RefreshSubtotal()
         End If
 
         If Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then
@@ -133,7 +133,27 @@ Partial Class NewOrder
     End Sub
 
     ' -----------------------------------------------------------------------
-    ' WebMethod: RecalculateSubtotal
+    ' WebMethod: SaveNetValue
+    ' Updates the NetValue for a single GridView2 row (identified by __RowGuid)
+    ' in the ViewState-backed AddRdcTable.
+    ' -----------------------------------------------------------------------
+    <WebMethod()>
+    <ScriptMethod()>
+    Public Shared Sub SaveNetValue(rowGuid As String, value As String)
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+        If dt Is Nothing Then Exit Sub
+
+        Dim dr As DataRow = dt.AsEnumerable().
+            FirstOrDefault(Function(r) String.Equals(
+                Convert.ToString(r("__RowGuid")), rowGuid, StringComparison.Ordinal))
+        If dr Is Nothing Then Exit Sub
+
+        dr("NetValue") = value
+        dt.AcceptChanges()
+        HttpContext.Current.Session("AddRdcTable_WM") = dt
+    End Sub
+
+
     ' Called by the JS recalculateSubtotal() function after every cell or
     ' header edit.  Formula: SUM over all item columns of (Price + Profit) * NoOfItems
     ' where NoOfItems = sum of all member row quantities for that column.
@@ -602,13 +622,76 @@ Partial Class NewOrder
     End Sub
 
     ' -----------------------------------------------------------------------
-    ' RefreshSubtotal — call after any server-side data change (delete row /
-    ' delete column) so litSubtotal reflects the updated data immediately,
-    ' without waiting for a JS PageMethod round-trip.
+    ' RefreshSubtotal — call after any server-side data change so litSubtotal,
+    ' rptSummary, and litGrandTotal all reflect the latest data.
     ' -----------------------------------------------------------------------
     Private Sub RefreshSubtotal()
-        litSubtotal.Text = CalculateSubtotal().ToString("0.000")
+        Dim sub_total As Decimal = CalculateSubtotal()
+        litSubtotal.Text = sub_total.ToString("0.000")
+        BindSummaryRepeater(sub_total)
     End Sub
+
+    ' -----------------------------------------------------------------------
+    ' BindSummaryRepeater
+    ' Reads every row from AddRdcTable, builds a {RowGuid, Label, Value} list
+    ' for rptSummary, and writes Grand Total (sum of NetValues + Subtotal)
+    ' to litGrandTotal and Label8.
+    ' -----------------------------------------------------------------------
+    Private Sub BindSummaryRepeater(sub_total As Decimal)
+        Dim summaryRows As New List(Of Object)
+        Dim netTotal As Decimal = 0D
+
+        Dim dt As DataTable = TryCast(ViewState("AddRdcTable"), DataTable)
+        If dt IsNot Nothing Then
+            For Each dr As DataRow In dt.Rows
+                Dim rowGuid As String = Convert.ToString(dr("__RowGuid"))
+                Dim label As String = Convert.ToString(dr("adjusmentName"))
+                Dim netVal As Decimal = ParseDecimalValue(dr("NetValue"))
+                netTotal += netVal
+                summaryRows.Add(New With {.RowGuid = rowGuid, .Label = label, .Value = netVal})
+            Next
+            ' Keep a Session-scoped copy for the SaveNetValue WebMethod
+            HttpContext.Current.Session("AddRdcTable_WM") = dt
+        End If
+
+        rptSummary.DataSource = summaryRows
+        rptSummary.DataBind()
+
+        Dim grandTotal As String = (sub_total + netTotal).ToString("0.000")
+        litGrandTotal.Text = grandTotal
+        Label8.Text = grandTotal
+
+        Dim totalIn As Decimal = CalculateTotalIn()
+        litTotalIn.Text = totalIn.ToString("0.000")
+        Label10.Text = totalIn.ToString("0.000")
+
+        If Math.Abs(sub_total + netTotal - totalIn) < 0.0005D Then
+            balanceBadge.Text = "Balanced"
+            balanceBadge.Style("background-color") = "#add8e6"
+        Else
+            balanceBadge.Text = "Unbalanced"
+            balanceBadge.Style("background-color") = "#ffb3b3"
+        End If
+    End Sub
+
+    ' -----------------------------------------------------------------------
+    ' CalculateTotalIn — SUM(Deposit) - SUM(Debt) across all member rows.
+    ' -----------------------------------------------------------------------
+    Private Function CalculateTotalIn() As Decimal
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Return 0D
+        If Not dt.Columns.Contains("Deposit") OrElse Not dt.Columns.Contains("Debt") Then Return 0D
+
+        Dim totalDeposit As Decimal = 0D
+        Dim totalDebt As Decimal = 0D
+
+        For Each row As DataRow In dt.Rows
+            totalDeposit += ParseDecimalValue(row("Deposit"))
+            totalDebt += ParseDecimalValue(row("Debt"))
+        Next
+
+        Return totalDeposit - totalDebt
+    End Function
 
     Private Sub RemoveHeaderValue(values As List(Of String), index As Integer)
         If values Is Nothing Then Exit Sub
@@ -860,6 +943,9 @@ Partial Class NewOrder
         If Not dt.Columns.Contains(AddRdcRowKeyColumn) Then
             dt.Columns.Add(AddRdcRowKeyColumn, GetType(String))
         End If
+        If Not dt.Columns.Contains("NetValue") Then
+            dt.Columns.Add("NetValue", GetType(String))
+        End If
         Return dt
     End Function
 
@@ -901,10 +987,37 @@ Partial Class NewOrder
             End If
         Next
         newRow(AddRdcRowKeyColumn) = Guid.NewGuid().ToString("N")
+
+        ' ── Calculate NetValue ──────────────────────────────────────────────
+        ' adjusmentCalculation : "Fixed Amount" | "Percentage"
+        ' adjusmentType        : "Addition"     | "Reduction"
+        ' CalculationAmount    : numeric amount entered by the user
+        If dt.Columns.Contains("NetValue") Then
+            Dim calcType As String = Convert.ToString(newRow("adjusmentCalculation")).Trim()
+            Dim incDec As String = Convert.ToString(newRow("adjusmentType")).Trim()
+            Dim amount As Decimal = ParseDecimalValue(newRow("CalculationAmount"))
+            Dim netVal As Decimal
+
+            If calcType.Equals("Percentage", StringComparison.OrdinalIgnoreCase) Then
+                Dim sub_total As Decimal = CalculateSubtotal()
+                netVal = (amount / 100D) * sub_total
+            Else   ' "Fixed Amount" or anything else
+                netVal = amount
+            End If
+
+            If incDec.Equals("Reduction", StringComparison.OrdinalIgnoreCase) Then
+                netVal = netVal * -1D
+            End If
+
+            newRow("NetValue") = netVal.ToString("0.000")
+        End If
+        ' ────────────────────────────────────────────────────────────────────
+
         dt.Rows.Add(newRow)
 
         BindAddRdcGrid(dt)
         LoadFromObject()
+        RefreshSubtotal()
     End Sub
 
     Protected Sub GridView2_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView2.RowCommand
@@ -922,6 +1035,7 @@ Partial Class NewOrder
 
         dt.Rows.Remove(dr)
         BindAddRdcGrid(dt)
+        RefreshSubtotal()
     End Sub
 
     Protected Sub lnkBtnAddMembers_Click(sender As Object, e As EventArgs) Handles lnkBtnAddMembers.Click
