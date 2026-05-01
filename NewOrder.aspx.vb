@@ -72,7 +72,7 @@ Partial Class NewOrder
 
         Dim MemberListParameters As New clsListProperties
         With MemberListParameters
-            .SQL = "Select ID, MemberName as [Name] from Members order by CInt(NoOfMovement) desc"
+            .SQL = "Select MemberID as ID, MemberName as [Name] from Members order by CInt(NoOfMovement) desc"
             .FormTitle = "Select Members"
             .ColumnHideAndShow = "YN"
             .EditableColumns = "NN"
@@ -1257,6 +1257,15 @@ Partial Class NewOrder
         ' and refresh totals so nothing resets after Save.
         LoadFromObject()
         RefreshSubtotal()
+
+        ' FIX: Re-bind GridView2 after Save so the user-edited NetValue is
+        ' displayed correctly.  Without this, GridView2 keeps rendering the
+        ' originally-calculated value (e.g. 0.411) even though Session and
+        ' ViewState already hold the edited value (e.g. 0.410).
+        ' Prefer the WebMethod session copy because SaveNetValue writes there.
+        Dim adjTable As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+        If adjTable Is Nothing Then adjTable = TryCast(ViewState("AddRdcTable"), DataTable)
+        BindAddRdcGrid(adjTable)
     End Sub
 
     ' -----------------------------------------------------------------------
