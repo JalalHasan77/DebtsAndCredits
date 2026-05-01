@@ -9,7 +9,20 @@ Partial Class MainPage
 
     End Sub
     Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        Label2.Text = getServerName()
+        Dim allSQL As String = TextBox1.Text
+        Dim L As New List(Of String)
+        L.AddRange(Split(allSQL, ";"))
+        L = L.Where(Function(s) Not String.IsNullOrWhiteSpace(s)).ToList()
+
+        For Each SQL As String In L
+            Try
+                DB.ExecuteNonQuery(InfoDB, SQL)
+            Catch ex As Exception
+                MsgBox(ex.Message)
+            End Try
+
+        Next
+        TextBox1.Text = ""
     End Sub
 End Class
 

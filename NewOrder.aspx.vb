@@ -24,6 +24,11 @@ Partial Class NewOrder
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
         If IsPostBack Then
+            ' Sync AddRdcTable ViewState from session so JS-edited NetValues survive postback.
+            Dim wmTable As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+            If wmTable IsNot Nothing Then
+                ViewState("AddRdcTable") = wmTable
+            End If
             PersistPostedGridValues()
             ' Keep litSubtotal, rptSummary and litGrandTotal current for all postback paths.
             RefreshSubtotal()
@@ -37,7 +42,7 @@ Partial Class NewOrder
         End If
 
         Dim ListParameters As New clsListProperties
-        ListParameters.SQL = "Select ID as [Key], VenderName as Title, Whatsapp as Phone from Venders"
+        ListParameters.SQL = "Select VenderID as [Key], VenderName as Title, Whatsapp as Phone from Venders"
         ListParameters.FormTitle = "Select Vendor"
         ListParameters.ColumnHideAndShow = "YNN"
         ListParameters.EditableColumns = "NNN"
@@ -89,13 +94,13 @@ Partial Class NewOrder
 
     Sub CreateInitialTable()
         Dim DT As New Data.DataTable
-        DT = GetDataTable(InfoDB, " SELECT ID, MemberName,'0.000' as Deposit, '0.000' as Debt,'0.000' as Profit  FROM Members WHERE MemberName IN (" &
+        DT = GetDataTable(InfoDB, " SELECT MemberID, MemberName,'0.000' as Deposit, '0.000' as Debt,'0.000' as Profit  FROM Members WHERE MemberName IN (" &
     "'Fatima AlHaddad'," &
     "'Fatima Mohammed'," &
     "'Elmeera'," &
     "'Roqaya'," &
     "'Jalal'," &
-    "'Safa Shamsan','Areej') order by ID;")
+    "'Safa Shamsan','Areej') order by MemberID;")
 
         HttpContext.Current.Session("MyTable") = DT
     End Sub
@@ -120,7 +125,7 @@ Partial Class NewOrder
     ' WebMethod: SaveCell
     ' Saves a single cell value into the in-session DataTable.
     ' -----------------------------------------------------------------------
-    <WebMethod()>
+    <WebMethod(EnableSession:=True)>
     <ScriptMethod()>
     Public Shared Sub SaveCell(rowIndex As Integer, columnName As String, value As String)
 
@@ -137,7 +142,7 @@ Partial Class NewOrder
     ' Updates the NetValue for a single GridView2 row (identified by __RowGuid)
     ' in the ViewState-backed AddRdcTable.
     ' -----------------------------------------------------------------------
-    <WebMethod()>
+    <WebMethod(EnableSession:=True)>
     <ScriptMethod()>
     Public Shared Sub SaveNetValue(rowGuid As String, value As String)
         Dim dt As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
@@ -159,7 +164,7 @@ Partial Class NewOrder
     ' where NoOfItems = sum of all member row quantities for that column.
     ' Returns the formatted string directly so the JS can update litSubtotal.
     ' -----------------------------------------------------------------------
-    <WebMethod()>
+    <WebMethod(EnableSession:=True)>
     <ScriptMethod()>
     Public Shared Function RecalculateSubtotal() As String
         Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
@@ -253,12 +258,12 @@ Partial Class NewOrder
         Dim actionField As New TemplateField()
         actionField.ItemStyle.HorizontalAlign = HorizontalAlign.Center
         actionField.ItemStyle.Width = Unit.Pixel(35)
-        actionField.ItemTemplate = New ImageButtonTemplate("ID")
+        actionField.ItemTemplate = New ImageButtonTemplate("MemberID")
         GridView1.Columns.Add(actionField)
 
         Dim colIndex As Integer = 0
         For Each dc As DataColumn In DT.Columns
-            If dc.ColumnName = "ID" Then Continue For
+            If dc.ColumnName = "MemberID" Then Continue For
 
             Dim tf As New TemplateField()
             tf.ItemTemplate = New EditableTemplate(dc.ColumnName, colIndex)
@@ -279,34 +284,53 @@ Partial Class NewOrder
     End Function
 
     Private Sub PersistPostedGridValues()
+        ' The SaveCell WebMethod already writes every cell edit directly into
+        ' Session("MyTable") as the user types, so Session is always the
+        ' authoritative source of truth.  The only edge-case we need to handle
+        ' here is a cell that was still open (hfVis = "1") at the exact moment
+        ' the user clicked Save — in that case the blur/saveCell JS sequence may
+        ' not have fired, so we read the posted TextBox value directly.
+        ' We must NOT read TextBox values for closed cells (hfVis = "0") because
+        ' the TextBox contains the original page-render value, not the JS-edited
+        ' value — overwriting Session with that stale value is precisely the bug
+        ' that caused Deposit / Debt / NetValue to revert after Save.
+
         Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
         If dt Is Nothing Then Exit Sub
         If GridView1.Rows.Count = 0 Then Exit Sub
 
         Dim colIndex As Integer = 0
+        Dim anyChanged As Boolean = False
 
         For Each dc As DataColumn In dt.Columns
-            If dc.ColumnName = "ID" Then Continue For
+            If dc.ColumnName = "MemberID" Then Continue For
 
             For Each row As GridViewRow In GridView1.Rows
                 If row.RowType <> DataControlRowType.DataRow Then Continue For
                 If row.RowIndex < 0 OrElse row.RowIndex >= dt.Rows.Count Then Continue For
 
+                ' Only act on cells that were open during the postback.
+                Dim hfVis As HiddenField = TryCast(row.FindControl("hfVis_" & row.RowIndex & "_" & colIndex), HiddenField)
+                If hfVis Is Nothing OrElse hfVis.Value <> "1" Then Continue For
+
                 Dim txt As TextBox = TryCast(row.FindControl("txtValue_" & row.RowIndex & "_" & colIndex), TextBox)
-                If txt IsNot Nothing Then
-                    dt.Rows(row.RowIndex)(dc.ColumnName) = txt.Text
-                End If
+                If txt Is Nothing Then Continue For
+
+                ' Cell was open — the TextBox value IS the user's current edit.
+                dt.Rows(row.RowIndex)(dc.ColumnName) = txt.Text
+                anyChanged = True
             Next
 
             colIndex += 1
         Next
 
-        RecalculateDynamicColumnSummaries(dt)
-        RecalculateRowProfits(dt)
-        dt.AcceptChanges()
-
-        HttpContext.Current.Session("MyTable") = dt
-        clTemp.lcObject = dt
+        If anyChanged Then
+            RecalculateDynamicColumnSummaries(dt)
+            RecalculateRowProfits(dt)
+            dt.AcceptChanges()
+            HttpContext.Current.Session("MyTable") = dt
+            clTemp.lcObject = dt
+        End If
     End Sub
 
     Protected Sub GridView1_RowCreated(sender As Object, e As GridViewRowEventArgs)
@@ -438,7 +462,7 @@ Partial Class NewOrder
 
     End Sub
 
-    <WebMethod()>
+    <WebMethod(EnableSession:=True)>
     Public Shared Sub SaveHeader(colIndex As Integer, level As Integer, value As String)
 
         If level = 1 Then
@@ -641,8 +665,17 @@ Partial Class NewOrder
         Dim summaryRows As New List(Of Object)
         Dim netTotal As Decimal = 0D
 
-        Dim dt As DataTable = TryCast(ViewState("AddRdcTable"), DataTable)
+        ' Prefer the WebMethod session copy (AddRdcTable_WM) because it receives
+        ' SaveNetValue edits directly and is always up-to-date.  Fall back to
+        ' ViewState only when the WM copy does not exist (e.g. first page load).
+        Dim wmDt As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+        Dim dt As DataTable = If(wmDt IsNot Nothing, wmDt, TryCast(ViewState("AddRdcTable"), DataTable))
+
         If dt IsNot Nothing Then
+            ' Keep both stores in sync so subsequent reads see the same data.
+            ViewState("AddRdcTable") = dt
+            HttpContext.Current.Session("AddRdcTable_WM") = dt
+
             For Each dr As DataRow In dt.Rows
                 Dim rowGuid As String = Convert.ToString(dr("__RowGuid"))
                 Dim label As String = Convert.ToString(dr("adjusmentName"))
@@ -650,8 +683,6 @@ Partial Class NewOrder
                 netTotal += netVal
                 summaryRows.Add(New With {.RowGuid = rowGuid, .Label = label, .Value = netVal})
             Next
-            ' Keep a Session-scoped copy for the SaveNetValue WebMethod
-            HttpContext.Current.Session("AddRdcTable_WM") = dt
         End If
 
         rptSummary.DataSource = summaryRows
@@ -826,16 +857,11 @@ Partial Class NewOrder
         Label2.Text = DR.Item("Key")
         TextBox1.Text = DR.Item("Title")
 
-        Dim SQL As String = " Select  "
-        SQL = SQL + vbCrLf + " Items.ID as ID , "
-        SQL = SQL + vbCrLf + " Items.Description As Title, "
-        SQL = SQL + vbCrLf + " VenderItems.Price AS Price, "
-        SQL = SQL + vbCrLf + " '0.0' AS Profit "
-        SQL = SQL + vbCrLf + " FROM "
-        SQL = SQL + vbCrLf + " Items "
-        SQL = SQL + vbCrLf + " INNER Join VenderItems ON Items.ID = VenderItems.ItemID "
-        SQL = SQL + vbCrLf + " WHERE "
-        SQL = SQL + vbCrLf + " VenderItems.VenderID = '" & Label2.Text & "'"
+        Dim SQL As String =
+            "SELECT Items.ItemID AS ID, Items.Description AS Title, VendorItems.Price AS Price, '0.0' AS Profit " &
+            "FROM Items INNER JOIN VendorItems ON VendorItems.ItemID = Items.ItemID " &
+            "WHERE VenderID = " & Label2.Text
+
 
         Dim ListProperties As New clsListProperties
         With ListProperties
@@ -973,7 +999,9 @@ Partial Class NewOrder
         Dim selectedRow As DataRow = TryCast(returnValue, DataRow)
         If selectedRow Is Nothing Then Exit Sub
 
-        Dim dt As DataTable = TryCast(ViewState("AddRdcTable"), DataTable)
+        ' Prefer the WM session copy so JS-edited NetValues survive postback.
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+        If dt Is Nothing Then dt = TryCast(ViewState("AddRdcTable"), DataTable)
         If dt Is Nothing Then
             dt = CreateAddRdcTableFromSource(selectedRow.Table)
         Else
@@ -1023,7 +1051,9 @@ Partial Class NewOrder
     Protected Sub GridView2_RowCommand(sender As Object, e As GridViewCommandEventArgs) Handles GridView2.RowCommand
         If e.CommandName <> "DeleteRow" Then Exit Sub
 
-        Dim dt As DataTable = TryCast(ViewState("AddRdcTable"), DataTable)
+        ' Prefer the WM session copy so JS-edited NetValues survive postback.
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+        If dt Is Nothing Then dt = TryCast(ViewState("AddRdcTable"), DataTable)
         If dt Is Nothing Then Exit Sub
         dt = EnsureAddRdcTable(dt)
 
@@ -1064,7 +1094,7 @@ Partial Class NewOrder
             If String.IsNullOrWhiteSpace(memberId) Then Continue For
 
             Dim exists As Boolean = dt.AsEnumerable().
-            Any(Function(r) Convert.ToString(r("ID")) = memberId)
+            Any(Function(r) Convert.ToString(r("MemberID")) = memberId)
 
             If exists Then Continue For
 
@@ -1072,8 +1102,8 @@ Partial Class NewOrder
 
             For Each dc As DataColumn In dt.Columns
                 Select Case dc.ColumnName
-                    Case "ID"
-                        dr("ID") = memberId
+                    Case "MemberID"
+                        dr("MemberID") = memberId
                     Case "MemberName"
                         dr("MemberName") = memberName
                     Case "Deposit", "Debt", "Profit"
@@ -1116,7 +1146,7 @@ Partial Class NewOrder
 
         Dim dr As DataRow =
             dt.AsEnumerable().
-               FirstOrDefault(Function(r) Convert.ToString(r("ID")) = rowId)
+               FirstOrDefault(Function(r) Convert.ToString(r("MemberID")) = rowId)
 
         If dr IsNot Nothing Then
             dt.Rows.Remove(dr)
@@ -1211,6 +1241,398 @@ Partial Class NewOrder
 
         LoadFromObject()
     End Sub
+
+    ' =======================================================================
+    '  SAVE ORDER
+    ' =======================================================================
+
+    Protected Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
+        Try
+            SaveOrder()
+        Catch ex As Exception
+            ' Save failed silently — log or handle as needed
+        End Try
+
+        ' Re-render GridView1 (keeps Deposit/Debt values from Session)
+        ' and refresh totals so nothing resets after Save.
+        LoadFromObject()
+        RefreshSubtotal()
+    End Sub
+
+    ' -----------------------------------------------------------------------
+    ' SaveOrder
+    ' Writes all tables inside one OleDb transaction.
+    ' Returns new OrderID on success, throws on failure.
+    ' -----------------------------------------------------------------------
+    Private Function SaveOrder() As Integer
+
+        Dim conn As New OleDb.OleDbConnection(InfoDB)
+        conn.Open()
+        Dim trans As OleDb.OleDbTransaction = conn.BeginTransaction()
+
+        Try
+            ' -- Collect header field values ----------------------------------
+            Dim venderID As Integer = 0
+            Integer.TryParse(hdnSelectedVendorValue.Value, venderID)
+
+            Dim orderDate As String = If(String.IsNullOrWhiteSpace(TextBox2.Text),
+                                         Date.Today.ToString("yyyy-MM-dd"),
+                                         TextBox2.Text.Trim())
+            Dim orderTime As String = If(String.IsNullOrWhiteSpace(TextBox3.Text),
+                                         Date.Now.ToString("HH:mm"),
+                                         TextBox3.Text.Trim())
+
+            Dim orderNumber As Object = DBNull.Value
+            Dim num As Integer
+            If Integer.TryParse(TextBox4.Text, num) Then orderNumber = num
+
+            Dim grandTotal As Decimal = ParseDecimalValue(Label8.Text)
+            Dim totalIn As Decimal = ParseDecimalValue(Label10.Text)
+            Dim subtotal As Decimal = ParseDecimalValue(litSubtotal.Text)
+
+            ' -- 1. INSERT Orders ---------------------------------------------
+            Dim sqlOrder As String =
+                "INSERT INTO Orders (VenderID,OrderDate,OrderTime,OrderNumber," &
+                "Subtotal,GrandTotal,TotalIn,Status,CreatedAt,UpdatedAt) " &
+                "VALUES (@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,Now(),Now())"
+
+            Dim cmdOrder As New OleDb.OleDbCommand(sqlOrder, conn, trans)
+            cmdOrder.Parameters.AddWithValue("@p1", If(venderID = 0, DBNull.Value, CObj(venderID)))
+            cmdOrder.Parameters.AddWithValue("@p2", orderDate)
+            cmdOrder.Parameters.AddWithValue("@p3", orderTime)
+            cmdOrder.Parameters.AddWithValue("@p4", orderNumber)
+            cmdOrder.Parameters.AddWithValue("@p5", subtotal)
+            cmdOrder.Parameters.AddWithValue("@p6", grandTotal)
+            cmdOrder.Parameters.AddWithValue("@p7", totalIn)
+            cmdOrder.Parameters.AddWithValue("@p8", "Saved")
+            cmdOrder.ExecuteNonQuery()
+
+            Dim orderID As Integer = Convert.ToInt32(
+                New OleDb.OleDbCommand("SELECT @@IDENTITY", conn, trans).ExecuteScalar())
+
+            ' -- 2. INSERT OrderItems (one per dynamic column) ----------------
+            Dim myTable As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+            Dim orderItemIDs As New Dictionary(Of String, Integer)
+
+            If myTable IsNot Nothing Then
+                Dim itemColNames As New List(Of String)
+                For ci As Integer = 5 To myTable.Columns.Count - 1
+                    itemColNames.Add(myTable.Columns(ci).ColumnName)
+                Next
+
+                For ci As Integer = 0 To itemColNames.Count - 1
+                    Dim colName As String = itemColNames(ci)
+                    Dim displayName As String = If(ci < HeaderLevel4.Count, HeaderLevel4(ci), colName)
+                    Dim price As Decimal = ParseDecimalValue(If(ci < HeaderLevel5.Count, HeaderLevel5(ci), "0"))
+                    Dim profit As Decimal = ParseDecimalValue(If(ci < HeaderLevel1.Count, HeaderLevel1(ci), "0"))
+                    Dim noOfItems As Decimal = ParseDecimalValue(If(ci < HeaderLevel3.Count, HeaderLevel3(ci), "0"))
+                    Dim total As Decimal = ParseDecimalValue(If(ci < HeaderLevel2.Count, HeaderLevel2(ci), "0"))
+                    Dim itemIdStr As String = If(ci < HeaderItemIds.Count, HeaderItemIds(ci), "")
+                    Dim itemID As Object = DBNull.Value
+                    Dim parsedItemID As Integer
+                    If Integer.TryParse(itemIdStr, parsedItemID) Then itemID = parsedItemID
+
+                    Dim sqlOI As String =
+                        "INSERT INTO OrderItems " &
+                        "(OrderID,ItemID,DisplayName,Price,Profit,NoOfItems,[Total],SortOrder) " &
+                        "VALUES (@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8)"
+                    Dim cmdOI As New OleDb.OleDbCommand(sqlOI, conn, trans)
+                    cmdOI.Parameters.AddWithValue("@p1", orderID)
+                    cmdOI.Parameters.AddWithValue("@p2", itemID)
+                    cmdOI.Parameters.AddWithValue("@p3", displayName)
+                    cmdOI.Parameters.AddWithValue("@p4", price)
+                    cmdOI.Parameters.AddWithValue("@p5", profit)
+                    cmdOI.Parameters.AddWithValue("@p6", noOfItems)
+                    cmdOI.Parameters.AddWithValue("@p7", total)
+                    cmdOI.Parameters.AddWithValue("@p8", ci)
+                    cmdOI.ExecuteNonQuery()
+
+                    orderItemIDs(colName) = Convert.ToInt32(
+                        New OleDb.OleDbCommand("SELECT @@IDENTITY", conn, trans).ExecuteScalar())
+                Next
+
+                ' -- 3. INSERT OrderMembers + OrderMemberItems ----------------
+                Dim sortMember As Integer = 0
+                For Each dr As DataRow In myTable.Rows
+                    Dim memberID As Integer = 0
+                    Integer.TryParse(Convert.ToString(dr("MemberID")), memberID)
+
+                    Dim sqlOM As String =
+                        "INSERT INTO OrderMembers " &
+                        "(OrderID,MemberID,Deposit,Debt,Profit,SortOrder) " &
+                        "VALUES (@p1,@p2,@p3,@p4,@p5,@p6)"
+                    Dim cmdOM As New OleDb.OleDbCommand(sqlOM, conn, trans)
+                    cmdOM.Parameters.AddWithValue("@p1", orderID)
+                    cmdOM.Parameters.AddWithValue("@p2", If(memberID = 0, DBNull.Value, CObj(memberID)))
+                    cmdOM.Parameters.AddWithValue("@p3", ParseDecimalValue(dr("Deposit")))
+                    cmdOM.Parameters.AddWithValue("@p4", ParseDecimalValue(dr("Debt")))
+                    cmdOM.Parameters.AddWithValue("@p5", ParseDecimalValue(dr("Profit")))
+                    cmdOM.Parameters.AddWithValue("@p6", sortMember)
+                    cmdOM.ExecuteNonQuery()
+                    sortMember += 1
+
+                    Dim orderMemberID As Integer = Convert.ToInt32(
+                        New OleDb.OleDbCommand("SELECT @@IDENTITY", conn, trans).ExecuteScalar())
+
+                    For Each colName As String In itemColNames
+                        If Not myTable.Columns.Contains(colName) Then Continue For
+                        Dim qty As Decimal = ParseDecimalValue(dr(colName))
+                        If qty = 0D Then Continue For
+                        Dim oiID As Integer = 0
+                        If Not orderItemIDs.TryGetValue(colName, oiID) Then Continue For
+
+                        Dim sqlOMI As String =
+                            "INSERT INTO OrderMemberItems " &
+                            "(OrderMemberID,OrderItemID,Quantity) " &
+                            "VALUES (@p1,@p2,@p3)"
+                        Dim cmdOMI As New OleDb.OleDbCommand(sqlOMI, conn, trans)
+                        cmdOMI.Parameters.AddWithValue("@p1", orderMemberID)
+                        cmdOMI.Parameters.AddWithValue("@p2", oiID)
+                        cmdOMI.Parameters.AddWithValue("@p3", qty)
+                        cmdOMI.ExecuteNonQuery()
+                    Next
+                Next
+            End If
+
+            ' -- 4. INSERT OrderAdjustments -----------------------------------
+            ' Prefer Session("AddRdcTable_WM") because SaveNetValue (WebMethod) writes
+            ' JS-edited NetValues directly there.  ViewState may not reflect those edits
+            ' if the postback ViewState sync in Page_Load was bypassed or stale.
+            Dim addRdcTable As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+            If addRdcTable Is Nothing Then
+                addRdcTable = TryCast(ViewState("AddRdcTable"), DataTable)
+            End If
+            If addRdcTable IsNot Nothing Then
+                Dim sortAdj As Integer = 0
+                For Each dr As DataRow In addRdcTable.Rows
+                    Dim distrib As Object = DBNull.Value
+                    If dr.Table.Columns.Contains("Distribution") Then
+                        distrib = Convert.ToString(dr("Distribution"))
+                    End If
+
+                    Dim sqlOA As String =
+                        "INSERT INTO OrderAdjustments " &
+                        "(OrderID,AdjustmentName,AdjustmentType,AdjustmentCalc," &
+                        "CalculationAmount,Distribution,NetValue,SortOrder) " &
+                        "VALUES (@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8)"
+                    Dim cmdOA As New OleDb.OleDbCommand(sqlOA, conn, trans)
+                    cmdOA.Parameters.AddWithValue("@p1", orderID)
+                    cmdOA.Parameters.AddWithValue("@p2", Convert.ToString(dr("adjusmentName")))
+                    cmdOA.Parameters.AddWithValue("@p3", Convert.ToString(dr("adjusmentType")))
+                    cmdOA.Parameters.AddWithValue("@p4", Convert.ToString(dr("adjusmentCalculation")))
+                    cmdOA.Parameters.AddWithValue("@p5", ParseDecimalValue(dr("CalculationAmount")))
+                    cmdOA.Parameters.AddWithValue("@p6", distrib)
+                    cmdOA.Parameters.AddWithValue("@p7", ParseDecimalValue(dr("NetValue")))
+                    cmdOA.Parameters.AddWithValue("@p8", sortAdj)
+                    cmdOA.ExecuteNonQuery()
+                    sortAdj += 1
+                Next
+            End If
+
+            ' -- Commit -------------------------------------------------------
+            trans.Commit()
+            conn.Close()
+            Return orderID
+
+        Catch ex As Exception
+            trans.Rollback()
+            conn.Close()
+            Throw
+        End Try
+
+    End Function
+
+    ' =======================================================================
+    '  LOAD ORDER
+    ' =======================================================================
+
+    Protected Sub btnLoad_Click(sender As Object, e As EventArgs) Handles btnLoad.Click
+        Try
+            LoadOrder(2)
+        Catch ex As Exception
+            ClientScript.RegisterStartupScript(Me.GetType(), "loadEx",
+                "alert('Error loading order: " & ex.Message.Replace("'", "") & "');", True)
+        End Try
+    End Sub
+
+    ' -----------------------------------------------------------------------
+    ' LoadOrder
+    ' Reads Orders, OrderItems, OrderMembers and OrderMemberItems for the
+    ' given OrderID and rebuilds the in-session state exactly as if the user
+    ' had built the order from scratch in NewOrder.
+    ' -----------------------------------------------------------------------
+    Private Sub LoadOrder(orderID As Integer)
+
+        Dim conn As New OleDb.OleDbConnection(InfoDB)
+        conn.Open()
+
+        Try
+            ' -- 1. Load the Orders header row --------------------------------
+            Dim sqlHdr As String =
+                "SELECT VenderID, OrderDate, OrderTime, OrderNumber, " &
+                "Subtotal, GrandTotal, TotalIn FROM Orders WHERE OrderID = " & orderID
+            Dim dtHdr As DataTable = GetDataTable(InfoDB, sqlHdr)
+            If dtHdr Is Nothing OrElse dtHdr.Rows.Count = 0 Then
+                ClientScript.RegisterStartupScript(Me.GetType(), "loadNotFound",
+                    "alert('Order " & orderID & " not found.');", True)
+                conn.Close()
+                Exit Sub
+            End If
+            Dim hdrRow As DataRow = dtHdr.Rows(0)
+
+            ' Populate header controls
+            hdnSelectedVendorValue.Value = Convert.ToString(hdrRow("VenderID"))
+            TextBox2.Text = Convert.ToString(hdrRow("OrderDate"))
+            TextBox3.Text = Convert.ToString(hdrRow("OrderTime"))
+            TextBox4.Text = Convert.ToString(hdrRow("OrderNumber"))
+
+            ' -- 2. Load OrderItems (columns) ---------------------------------
+            Dim sqlItems As String =
+                "SELECT OrderItemID, ItemID, DisplayName, Price, Profit, " &
+                "NoOfItems, [Total], SortOrder " &
+                "FROM OrderItems WHERE OrderID = " & orderID & " ORDER BY SortOrder"
+            Dim dtItems As DataTable = GetDataTable(InfoDB, sqlItems)
+
+            ' -- 3. Load OrderMembers -----------------------------------------
+            Dim sqlMembers As String =
+                "SELECT om.OrderMemberID, om.MemberID, m.MemberName, " &
+                "om.Deposit, om.Debt, om.Profit, om.SortOrder " &
+                "FROM OrderMembers om " &
+                "INNER JOIN Members m ON m.ID = om.MemberID " &
+                "WHERE om.OrderID = " & orderID & " ORDER BY om.SortOrder"
+            Dim dtMembers As DataTable = GetDataTable(InfoDB, sqlMembers)
+
+            ' -- 4. Load OrderMemberItems (quantities) ------------------------
+            Dim sqlQty As String =
+                "SELECT omi.OrderMemberID, omi.OrderItemID, omi.Quantity " &
+                "FROM OrderMemberItems omi " &
+                "INNER JOIN OrderMembers om ON om.OrderMemberID = omi.OrderMemberID " &
+                "WHERE om.OrderID = " & orderID
+            Dim dtQty As DataTable = GetDataTable(InfoDB, sqlQty)
+
+            ' -- 5. Load OrderAdjustments (GridView2) -------------------------
+            Dim sqlAdj As String =
+                "SELECT AdjustmentName AS adjusmentName, AdjustmentType AS adjusmentType, " &
+                "AdjustmentCalc AS adjusmentCalculation, CalculationAmount, " &
+                "Distribution, NetValue, SortOrder " &
+                "FROM OrderAdjustments WHERE OrderID = " & orderID & " ORDER BY SortOrder"
+            Dim dtAdj As DataTable = GetDataTable(InfoDB, sqlAdj)
+
+            conn.Close()
+
+            ' ----------------------------------------------------------------
+            ' Rebuild MyTable in Session
+            ' ----------------------------------------------------------------
+            Dim myTable As New DataTable()
+            myTable.Columns.Add("MemberID", GetType(String))
+            myTable.Columns.Add("MemberName", GetType(String))
+            myTable.Columns.Add("Deposit", GetType(String))
+            myTable.Columns.Add("Debt", GetType(String))
+            myTable.Columns.Add("Profit", GetType(String))
+
+            ' Add one column per OrderItem
+            Dim itemColNames As New List(Of String)
+            Dim level1 As New List(Of String)
+            Dim level2 As New List(Of String)
+            Dim level3 As New List(Of String)
+            Dim level4 As New List(Of String)
+            Dim level5 As New List(Of String)
+            Dim itemIds As New List(Of String)
+
+            If dtItems IsNot Nothing Then
+                For Each itemRow As DataRow In dtItems.Rows
+                    Dim colName As String = BuildUniqueItemColumnName(myTable,
+                        Convert.ToString(itemRow("ItemID")),
+                        Convert.ToString(itemRow("DisplayName")))
+                    myTable.Columns.Add(colName, GetType(String))
+                    itemColNames.Add(colName)
+
+                    level1.Add(Convert.ToString(itemRow("Profit")))
+                    level2.Add(Convert.ToString(itemRow("Total")))
+                    level3.Add(Convert.ToString(itemRow("NoOfItems")))
+                    level4.Add(Convert.ToString(itemRow("DisplayName")))
+                    level5.Add(Convert.ToString(itemRow("Price")))
+                    itemIds.Add(Convert.ToString(itemRow("ItemID")))
+                Next
+            End If
+
+            ' Add one row per OrderMember
+            If dtMembers IsNot Nothing Then
+                For Each memRow As DataRow In dtMembers.Rows
+                    Dim dr As DataRow = myTable.NewRow()
+                    dr("MemberID") = Convert.ToString(memRow("MemberID"))
+                    dr("MemberName") = Convert.ToString(memRow("MemberName"))
+                    dr("Deposit") = Convert.ToString(memRow("Deposit"))
+                    dr("Debt") = Convert.ToString(memRow("Debt"))
+                    dr("Profit") = Convert.ToString(memRow("Profit"))
+
+                    Dim omID As Integer = Convert.ToInt32(memRow("OrderMemberID"))
+
+                    If dtItems IsNot Nothing AndAlso dtQty IsNot Nothing Then
+                        For ci As Integer = 0 To itemColNames.Count - 1
+                            Dim oiID As Integer = Convert.ToInt32(dtItems.Rows(ci)("OrderItemID"))
+
+                            Dim qtyRow As DataRow = dtQty.AsEnumerable().FirstOrDefault(
+                                Function(r) Convert.ToInt32(r("OrderMemberID")) = omID AndAlso
+                                            Convert.ToInt32(r("OrderItemID")) = oiID)
+
+                            dr(itemColNames(ci)) = If(qtyRow IsNot Nothing,
+                                Convert.ToString(qtyRow("Quantity")), "")
+                        Next
+                    End If
+
+                    myTable.Rows.Add(dr)
+                Next
+            End If
+
+            myTable.AcceptChanges()
+            HttpContext.Current.Session("MyTable") = myTable
+            clTemp.lcObject = myTable
+
+            ' Persist header lists to Session
+            Session("HeaderLevel1") = level1
+            Session("HeaderLevel2") = level2
+            Session("HeaderLevel3") = level3
+            Session("HeaderLevel4") = level4
+            Session("HeaderLevel5") = level5
+            Session("HeaderItemIds") = itemIds
+
+            ' Rebuild Adjustments table (GridView2)
+            If dtAdj IsNot Nothing AndAlso dtAdj.Rows.Count > 0 Then
+                Dim adjTable As New DataTable()
+                For Each col As DataColumn In dtAdj.Columns
+                    adjTable.Columns.Add(col.ColumnName, col.DataType)
+                Next
+                adjTable = EnsureAddRdcTable(adjTable)
+                For Each adjRow As DataRow In dtAdj.Rows
+                    Dim nr As DataRow = adjTable.NewRow()
+                    For Each col As DataColumn In dtAdj.Columns
+                        If adjTable.Columns.Contains(col.ColumnName) Then
+                            nr(col.ColumnName) = adjRow(col.ColumnName)
+                        End If
+                    Next
+                    nr("__RowGuid") = Guid.NewGuid().ToString("N")
+                    adjTable.Rows.Add(nr)
+                Next
+                BindAddRdcGrid(adjTable)
+            Else
+                BindAddRdcGrid(Nothing)
+            End If
+
+            ' Rebuild GridView1 and refresh totals
+            LoadFromObject()
+            RefreshSubtotal()
+
+            ClientScript.RegisterStartupScript(Me.GetType(), "loadOK",
+                "alert('Order " & orderID & " loaded successfully.');", True)
+
+        Catch ex As Exception
+            conn.Close()
+            Throw
+        End Try
+
+    End Sub
+
 End Class
 
 
@@ -1268,9 +1690,12 @@ Public Class EditableTemplate
 
         Dim lbl As New Label()
         Dim txt As New TextBox()
+        Dim hfVis As New HiddenField()
 
         lbl.ID = "lblValue"
         txt.ID = "txtValue"
+        hfVis.ID = "hfVis"
+        hfVis.Value = "0"
 
         txt.Style("display") = "none"
         txt.Style("width") = "85%"
@@ -1285,6 +1710,7 @@ Public Class EditableTemplate
 
                                             lbl.ID = "lblValue_" & rowIndex & "_" & _columnIndex
                                             txt.ID = "txtValue_" & rowIndex & "_" & _columnIndex
+                                            hfVis.ID = "hfVis_" & rowIndex & "_" & _columnIndex
 
                                             Dim valueObj = DataBinder.Eval(row.DataItem, _columnName)
                                             Dim value As String = If(valueObj Is DBNull.Value, "", valueObj.ToString())
@@ -1299,6 +1725,7 @@ Public Class EditableTemplate
 
         wrapper.Controls.Add(lbl)
         wrapper.Controls.Add(txt)
+        wrapper.Controls.Add(hfVis)
         container.Controls.Add(wrapper)
 
     End Sub

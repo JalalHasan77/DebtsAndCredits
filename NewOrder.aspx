@@ -159,18 +159,45 @@
         width: 35%;
         text-align: center;
     }
+    .btn-action {
+        background: transparent;
+        color: #666;
+        border: 1.5px solid #aaa;
+        border-radius: 0;
+        padding: 3px 18px;
+        font-family: Arial;
+        font-size: 13px;
+        cursor: pointer;
+        margin: 0;
+        margin-right: -1px;
+        position: relative;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .btn-action:hover {
+        background-color: #e8e8e8;
+        color: #333;
+        border-color: #888;
+        z-index: 1;
+    }
+
+    .btn-action:active {
+        background-color: #d0d0d0;
+    }
 </style>
 
     <script type="text/javascript">
 
         function editCell(wrapper) {
             var lbl = wrapper.querySelector("span");
-            var txt = wrapper.querySelector("input");
+            var txt = wrapper.querySelector("input[type=text], input:not([type=hidden])");
+            var hfv = wrapper.querySelector("input[type=hidden]");
 
             if (txt.style.display === "inline") return;
 
             lbl.style.display = "none";
             txt.style.display = "inline";
+            if (hfv) hfv.value = "1";  // mark cell as open
             txt.focus();
             txt.select();
         }
@@ -182,6 +209,8 @@
             lbl.innerText = textbox.value;
             textbox.style.display = "none";
             lbl.style.display = "inline";
+            var hfv = wrapper.querySelector("input[type=hidden]");
+            if (hfv) hfv.value = "0";  // mark cell as closed
             //====================================================
             // Get cell info
             var rowIndex = wrapper.getAttribute("data-rowindex");
@@ -632,6 +661,11 @@
                                     </td>
                                     <td style="width: 60%;align-items:flex-start" >
                                         <div class="outerBlock">
+
+    <div class="row" style="text-align:left; margin-left:0; padding-left:0;">
+        <asp:Button ID="btnLoad" runat="server" Text="Load" CssClass="btn-action" OnClick="btnLoad_Click" />
+        <asp:Button ID="btnSave" runat="server" Text="Save" CssClass="btn-action" OnClick="btnSave_Click" />
+    </div>
 
     <div class="row">
         <span class="labelCol">

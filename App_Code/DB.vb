@@ -147,7 +147,7 @@ Public Module DB
         Try
             Dcom.ExecuteNonQuery()
         Catch ex As Exception
-            IO.File.WriteAllText(System.AppDomain.CurrentDomain.BaseDirectory & "\App_Code\SQL4Treasury.txt", SQL)
+            MsgBox(ex.Message)
         End Try
 
         Try

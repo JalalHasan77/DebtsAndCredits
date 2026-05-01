@@ -177,10 +177,12 @@
                     <table cellpadding="10" cellspacing="10" class="auto-style3">
                                 <tr>
                                     <td style="width: 20%; vertical-align: top; text-align: center;" class="auto-style4">
-                                        <asp:Button ID="Button1" runat="server" Text="Button" />
-                                    </td>
+                                        &nbsp;</td>
                                     <td style="width: 60%">
+                                        <asp:Button ID="Button1" runat="server" Text="Button" />
                                         <asp:Label ID="Label2" runat="server" Text="Label"></asp:Label>
+                                        <br />
+                                        <asp:TextBox ID="TextBox1" runat="server" Height="190px" TextMode="MultiLine" Width="554px"></asp:TextBox>
                                     </td>
                                     <td style="width: 20%; vertical-align: top;">
                                         &nbsp;</td>

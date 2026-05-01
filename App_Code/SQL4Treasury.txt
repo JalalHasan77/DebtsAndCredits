@@ -1,1 +1,15 @@
-UPDATE TRSRY_TEMPUSERS SET USERCOLOR = 'G' WHERE ID = 2451
+CREATE TABLE Orders (
+    OrderID      AUTOINCREMENT  CONSTRAINT PK_Orders PRIMARY KEY,
+    VenderID     INTEGER,
+    OrderDate    DATE,
+    OrderTime    DATE,
+    OrderNumber  INTEGER,
+    Subtotal     CURRENCY       DEFAULT 0,
+    GrandTotal   CURRENCY       DEFAULT 0,
+    TotalIn      CURRENCY       DEFAULT 0,
+    Status       TEXT(50)       DEFAULT 'Draft',
+    Notes        MEMO(500),
+    CreatedAt    DATE           DEFAULT Now(),
+    UpdatedAt    DATE           DEFAULT Now(),
+    CONSTRAINT FK_Orders_Vender FOREIGN KEY (VenderID) REFERENCES Venders (VenderID)
+)
