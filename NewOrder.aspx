@@ -643,12 +643,16 @@
                     <table cellpadding="10" cellspacing="10" class="auto-style3">
                                 <tr>
                                     <td style="width: 20%; vertical-align: top; text-align: center;" class="auto-style4">
-                                        <asp:Button ID="Button1" runat="server" Text="Button" />
+                                        <asp:Button ID="Button1" runat="server" Text="Button"
+                                            UseSubmitBehavior="false"
+                                            OnClientClick="return false;" />
                                         <asp:HiddenField ID="hfRowIndex" runat="server" />
                                         <asp:HiddenField ID="hfColumnName" runat="server" />
                                         <asp:HiddenField ID="hfNewValue" runat="server" />
                                         <asp:Label ID="Label2" runat="server" Text="Label"></asp:Label>
-                                        <asp:Button ID="btnTest" runat="server" Text="Test" OnClientClick="testCall(); return false;" />
+                                        <asp:Button ID="btnTest" runat="server" Text="Test"
+                                            UseSubmitBehavior="false"
+                                            OnClientClick="testCall(); return false;" />
 
                                         <br />
                                         <br />
@@ -664,7 +668,8 @@
 
     <div class="row" style="text-align:left; margin-left:0; padding-left:0;">
         <asp:Button ID="btnLoad" runat="server" Text="Load" CssClass="btn-action" OnClick="btnLoad_Click" />
-        <asp:Button ID="btnSave" runat="server" Text="Save" CssClass="btn-action" OnClick="btnSave_Click" />
+        <asp:Button ID="btnSave" runat="server" Text="Save" CssClass="btn-action" OnClick="btnSave_Click"
+                    OnClientClick="setTimeout(function(){ var b=document.getElementById('btnSave'); if(b){b.disabled=true; b.value='Saving...';} }, 0); return true;" />
     </div>
 
     <div class="row">
@@ -733,8 +738,11 @@
 
             <span style="display:inline-block; width:15px;"></span>
 
-            <%-- Button2 uses ClientIDMode="Static" so its ID is always "Button2" in the DOM --%>
-            <asp:Button ID="Button2" runat="server" ClientIDMode="Static" Style="display:none;" />
+            <%-- Button2 uses ClientIDMode="Static" so its ID is always "Button2" in the DOM. --%>
+            <%-- UseSubmitBehavior="false" makes it emit __doPostBack() instead of a raw       --%>
+            <%-- form submit, so it cannot accidentally trigger btnSave_Click.                 --%>
+            <asp:Button ID="Button2" runat="server" ClientIDMode="Static" Style="display:none;"
+                        UseSubmitBehavior="false" />
 
             <asp:LinkButton ID="LinkButton4"
                             runat="server"
