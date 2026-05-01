@@ -1463,6 +1463,20 @@ Partial Class NewOrder
                 Next
             End If
 
+            ' -- 5. UPDATE Members.NoOfMovement (+1 per member in this order) --
+            If myTable IsNot Nothing Then
+                For Each dr As DataRow In myTable.Rows
+                    Dim memberID As Integer = 0
+                    If Integer.TryParse(Convert.ToString(dr("MemberID")), memberID) AndAlso memberID > 0 Then
+                        Dim sqlUpd As String =
+                            "UPDATE Members SET NoOfMovement = NoOfMovement + 1 WHERE MemberID = @p1"
+                        Dim cmdUpd As New OleDb.OleDbCommand(sqlUpd, conn, trans)
+                        cmdUpd.Parameters.AddWithValue("@p1", memberID)
+                        cmdUpd.ExecuteNonQuery()
+                    End If
+                Next
+            End If
+
             ' -- Commit -------------------------------------------------------
             trans.Commit()
             conn.Close()
