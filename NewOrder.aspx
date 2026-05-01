@@ -649,7 +649,6 @@
                                         <asp:HiddenField ID="hfRowIndex" runat="server" />
                                         <asp:HiddenField ID="hfColumnName" runat="server" />
                                         <asp:HiddenField ID="hfNewValue" runat="server" />
-                                        <asp:Label ID="Label2" runat="server" Text="Label"></asp:Label>
                                         <asp:Button ID="btnTest" runat="server" Text="Test"
                                             UseSubmitBehavior="false"
                                             OnClientClick="testCall(); return false;" />
@@ -679,9 +678,7 @@
             </asp:LinkButton>
         </span>
         <asp:TextBox ID="TextBox1" runat="server" CssClass="txtbox" Width="300px" ReadOnly="true"></asp:TextBox>
-        <asp:Label ID="Label6" runat="server" Text="Label"></asp:Label>
-        <asp:Label ID="lblVendorText" runat="server" Text="Label"></asp:Label>
-        <asp:Label ID="lblVendorValue" runat="server" Text="Label"></asp:Label>
+                                        <asp:Label ID="Label2" runat="server" Text="Label"></asp:Label>
         <asp:HiddenField ID="hdnSelectedVendorValue" runat="server" />
         <asp:HiddenField ID="hdnSelectedVendorText" runat="server" />
     </div>
@@ -702,7 +699,7 @@
         <span class="labelCol">
                 <asp:Label ID="Label5" runat="server" Text="Number" Font-Names="Arial"></asp:Label>
         </span>
-        <asp:TextBox ID="TextBox4" runat="server" CssClass="txtbox" Width="50px"></asp:TextBox>
+        <asp:TextBox ID="TextBox4" runat="server" CssClass="txtbox" Width="50px" onkeydown="if(event.key==='Enter'){document.getElementById('btnLoad').click();return false;}"></asp:TextBox>
 
     </div>
 
@@ -874,7 +871,7 @@
 
     <ItemStyle CssClass="col-80"></ItemStyle>
             </asp:BoundField>
-            <asp:BoundField DataField="Distrbution" HeaderText="Distribution" />
+            <asp:BoundField DataField="Distribution" HeaderText="Distribution" />
 
             <asp:TemplateField HeaderText="Net Value"
                                HeaderStyle-CssClass="col-80"

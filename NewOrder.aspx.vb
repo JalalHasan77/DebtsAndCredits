@@ -33,12 +33,32 @@ Partial Class NewOrder
             ' Keep litSubtotal, rptSummary and litGrandTotal current for all postback paths.
             RefreshSubtotal()
         Else
-            ' First load only — clear any saved-order guard from a previous visit.
             HttpContext.Current.Session.Remove("LastSavedOrderID")
+
+            Dim pendingID As Object = HttpContext.Current.Session("PendingLoadOrderID")
+            If pendingID IsNot Nothing Then
+                Try
+                    LoadOrder(Convert.ToInt32(pendingID))
+                    RestoreHeaderControlsFromSession()
+                    HttpContext.Current.Session.Remove("PendingLoadOrderID")
+                Catch ex As Exception
+                    HttpContext.Current.Session.Remove("PendingLoadOrderID")
+                    ClientScript.RegisterStartupScript(Me.GetType(), "loadEx",
+                        "alert('Error loading order: " & ex.Message.Replace("'", "") & "');", True)
+                End Try
+            Else
+                HttpContext.Current.Session.Remove("LoadedVenderID")
+                HttpContext.Current.Session.Remove("LoadedVenderName")
+                HttpContext.Current.Session.Remove("LoadedGrandTotal")
+            End If
+
             RefreshSubtotal()
         End If
 
-        If Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then
+        Dim _sn As Object = HttpContext.Current.Session("LoadedVenderName")
+        If _sn IsNot Nothing Then
+            TextBox1.Text = Convert.ToString(_sn)
+        ElseIf Not String.IsNullOrEmpty(hdnSelectedVendorText.Value) Then
             TextBox1.Text = hdnSelectedVendorText.Value
         End If
 
@@ -55,10 +75,6 @@ Partial Class NewOrder
                                       450,
                                       760,
                                       VendorPopupHelper.PopupPlacement.Center,
-                                      hdnSelectedVendorValue,
-                                      hdnSelectedVendorText,
-                                      lblVendorValue,
-                                      lblVendorText,
                                       "Select Vendor",
                                       VendorPopupHelper.PopupDisplayMode.FrameOnly)
 
@@ -359,7 +375,7 @@ Partial Class NewOrder
                         spacerCell.BackColor = Drawing.Color.WhiteSmoke
                         h0.Cells.Add(spacerCell)
                     Else
-                        h0.Cells.Add(CreateDeleteHeaderCell(i - 1, HeaderItemIds(i - 1)))
+                        h0.Cells.Add(CreateDeleteHeaderCell(i - 1, HeaderItemIds(i - 5)))
                     End If
                 Next
             End If
@@ -409,7 +425,7 @@ Partial Class NewOrder
                     cell.VerticalAlign = VerticalAlign.Middle
                     h1.Cells.Add(cell)
                 Else
-                    h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i - 1), i - 1, 1))
+                    h1.Cells.Add(CreateEditableHeaderCell(HeaderLevel1(i - 5), i - 1, 1))
                 End If
 
             Next
@@ -419,7 +435,7 @@ Partial Class NewOrder
             '========================
             Dim h2 As New GridViewRow(1, 0, DataControlRowType.Header, DataControlRowState.Insert)
             For i As Integer = 5 To colCount - 1
-                h2.Cells.Add(CreateEditableHeaderCell(HeaderLevel2(i - 1), i - 1, 2))
+                h2.Cells.Add(CreateEditableHeaderCell(HeaderLevel2(i - 5), i - 1, 2))
             Next
 
             '========================
@@ -427,7 +443,7 @@ Partial Class NewOrder
             '========================
             Dim h3 As New GridViewRow(2, 0, DataControlRowType.Header, DataControlRowState.Insert)
             For i As Integer = 5 To colCount - 1
-                h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i - 1), i - 1, 3))
+                h3.Cells.Add(CreateEditableHeaderCell(HeaderLevel3(i - 5), i - 1, 3))
             Next
 
             '========================
@@ -435,7 +451,7 @@ Partial Class NewOrder
             '========================
             Dim h4 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
             For i As Integer = 5 To colCount - 1
-                h4.Cells.Add(CreateEditableHeaderCell(HeaderLevel4(i - 1), i - 1, 4))
+                h4.Cells.Add(CreateEditableHeaderCell(HeaderLevel4(i - 5), i - 1, 4))
             Next
 
             '========================
@@ -443,7 +459,7 @@ Partial Class NewOrder
             '========================
             Dim h5 As New GridViewRow(3, 0, DataControlRowType.Header, DataControlRowState.Insert)
             For i As Integer = 5 To colCount - 1
-                h5.Cells.Add(CreateEditableHeaderCell(HeaderLevel5(i - 1), i - 1, 5))
+                h5.Cells.Add(CreateEditableHeaderCell(HeaderLevel5(i - 5), i - 1, 5))
             Next
 
             Dim insertRowIndex As Integer = 0
@@ -697,7 +713,17 @@ Partial Class NewOrder
         litTotalIn.Text = totalIn.ToString("0.000")
         Label10.Text = totalIn.ToString("0.000")
 
-        If Math.Abs(sub_total + netTotal - totalIn) < 0.0005D Then
+        UpdateBalanceBadge(sub_total + netTotal, totalIn)
+    End Sub
+
+    ' -----------------------------------------------------------------------
+    ' UpdateBalanceBadge
+    ' Compares grandTotal (subtotal + net adjustments) against totalIn
+    ' (sum of deposits minus debts) and colours the badge accordingly.
+    ' Call this wherever the balance state may have changed.
+    ' -----------------------------------------------------------------------
+    Private Sub UpdateBalanceBadge(grandTotal As Decimal, totalIn As Decimal)
+        If Math.Abs(grandTotal - totalIn) < 0.0005D Then
             balanceBadge.Text = "Balanced"
             balanceBadge.Style("background-color") = "#add8e6"
         Else
@@ -1298,14 +1324,16 @@ Partial Class NewOrder
         Try
             ' -- Collect header field values ----------------------------------
             Dim venderID As Integer = 0
-            Integer.TryParse(hdnSelectedVendorValue.Value, venderID)
+            If Not Integer.TryParse(Label2.Text.Trim(), venderID) OrElse venderID = 0 Then
+                Integer.TryParse(hdnSelectedVendorValue.Value, venderID)
+            End If
 
             Dim orderDate As String = If(String.IsNullOrWhiteSpace(TextBox2.Text),
                                          Date.Today.ToString("yyyy-MM-dd"),
-                                         TextBox2.Text.Trim())
+                                         Date.Parse(TextBox2.Text.Trim()).ToString("yyyy-MM-dd"))
             Dim orderTime As String = If(String.IsNullOrWhiteSpace(TextBox3.Text),
                                          Date.Now.ToString("HH:mm"),
-                                         TextBox3.Text.Trim())
+                                         Date.Parse(TextBox3.Text.Trim()).ToString("HH:mm"))
 
             Dim orderNumber As Object = DBNull.Value
             Dim num As Integer
@@ -1496,11 +1524,58 @@ Partial Class NewOrder
 
     Protected Sub btnLoad_Click(sender As Object, e As EventArgs) Handles btnLoad.Click
         Try
-            LoadOrder(2)
+            Dim orderID As Integer = 0
+
+            If Integer.TryParse(TextBox4.Text.Trim(), orderID) AndAlso orderID > 0 Then
+                HttpContext.Current.Session("PendingLoadOrderID") = orderID
+            Else
+                Dim pending As Object = HttpContext.Current.Session("PendingLoadOrderID")
+                If pending IsNot Nothing AndAlso
+                   Integer.TryParse(Convert.ToString(pending), orderID) AndAlso
+                   orderID > 0 Then
+                    ' Use saved ID silently.
+                Else
+                    ClientScript.RegisterStartupScript(Me.GetType(), "loadEx",
+                        "alert('Please enter a valid Order ID in the Number field.');", True)
+                    Exit Sub
+                End If
+            End If
+
+            LoadOrder(orderID)
+            RestoreHeaderControlsFromSession()
+            HttpContext.Current.Session.Remove("PendingLoadOrderID")
+
+            ' Refresh the balance badge now that both grand total and totalIn
+            ' are fully resolved (LoadOrder rebuilds data; RestoreHeaderControlsFromSession
+            ' finalises the displayed grand total).
+            Dim sub_total As Decimal = CalculateSubtotal()
+            Dim totalIn As Decimal = CalculateTotalIn()
+            Dim netAdj As Decimal = ParseDecimalValue(litGrandTotal.Text) - sub_total
+            UpdateBalanceBadge(sub_total + netAdj, totalIn)
+
         Catch ex As Exception
+            HttpContext.Current.Session.Remove("PendingLoadOrderID")
             ClientScript.RegisterStartupScript(Me.GetType(), "loadEx",
                 "alert('Error loading order: " & ex.Message.Replace("'", "") & "');", True)
         End Try
+    End Sub
+
+    Private Sub RestoreHeaderControlsFromSession()
+        Dim sID As Object = HttpContext.Current.Session("LoadedVenderID")
+        Dim sName As Object = HttpContext.Current.Session("LoadedVenderName")
+        Dim sGT As Object = HttpContext.Current.Session("LoadedGrandTotal")
+        If sID IsNot Nothing Then
+            Label2.Text = Convert.ToString(sID)
+            hdnSelectedVendorValue.Value = Convert.ToString(sID)
+        End If
+        If sName IsNot Nothing Then
+            TextBox1.Text = Convert.ToString(sName)
+            hdnSelectedVendorText.Value = Convert.ToString(sName)
+        End If
+        If sGT IsNot Nothing Then
+            Label8.Text = Convert.ToString(sGT)
+            litGrandTotal.Text = Convert.ToString(sGT)
+        End If
     End Sub
 
     ' -----------------------------------------------------------------------
@@ -1529,10 +1604,43 @@ Partial Class NewOrder
         Dim hdrRow As DataRow = dtHdr.Rows(0)
 
         ' Populate header controls
-        hdnSelectedVendorValue.Value = Convert.ToString(hdrRow("VenderID"))
-        TextBox2.Text = Convert.ToString(hdrRow("OrderDate"))
-        TextBox3.Text = Convert.ToString(hdrRow("OrderTime"))
+        Dim _vid As String = Convert.ToString(hdrRow("VenderID"))
+        Dim _gtDec As Decimal
+        Dim _gt As String = If(Decimal.TryParse(Convert.ToString(hdrRow("GrandTotal")),
+                                                 System.Globalization.NumberStyles.Any,
+                                                 System.Globalization.CultureInfo.InvariantCulture, _gtDec),
+                               _gtDec.ToString("0.000"), "0.000")
+
+        Label2.Text = _vid
+        hdnSelectedVendorValue.Value = _vid
+
+        Dim _vname As String = ""
+        If Not String.IsNullOrWhiteSpace(_vid) Then
+            Dim _dtV As DataTable = GetDataTable(InfoDB,
+                "SELECT VenderName FROM Venders WHERE VenderID = " & _vid)
+            If _dtV IsNot Nothing AndAlso _dtV.Rows.Count > 0 Then
+                _vname = Convert.ToString(_dtV.Rows(0)("VenderName"))
+            End If
+        End If
+        TextBox1.Text = _vname
+        hdnSelectedVendorText.Value = _vname
+
+        Label8.Text = _gt
+        litGrandTotal.Text = _gt
+
+        Dim _od As Date
+        Dim _odRaw As String = Convert.ToString(hdrRow("OrderDate"))
+        TextBox2.Text = If(Date.TryParse(_odRaw, _od), _od.ToString("yyyy-MM-dd"), _odRaw)
+
+        Dim _ot As Date
+        Dim _otRaw As String = Convert.ToString(hdrRow("OrderTime"))
+        TextBox3.Text = If(Date.TryParse(_otRaw, _ot), _ot.ToString("HH:mm"), _otRaw)
+
         TextBox4.Text = Convert.ToString(hdrRow("OrderNumber"))
+
+        HttpContext.Current.Session("LoadedVenderID") = _vid
+        HttpContext.Current.Session("LoadedVenderName") = _vname
+        HttpContext.Current.Session("LoadedGrandTotal") = _gt
 
         ' -- 2. Load OrderItems (columns) ---------------------------------
         Dim sqlItems As String =
@@ -1546,7 +1654,7 @@ Partial Class NewOrder
             "SELECT om.OrderMemberID, om.MemberID, m.MemberName, " &
             "om.Deposit, om.Debt, om.Profit, om.SortOrder " &
             "FROM OrderMembers om " &
-            "INNER JOIN Members m ON m.ID = om.MemberID " &
+            "INNER JOIN Members m ON m.MemberID = om.MemberID " &
             "WHERE om.OrderID = " & orderID & " ORDER BY om.SortOrder"
         Dim dtMembers As DataTable = GetDataTable(InfoDB, sqlMembers)
 
