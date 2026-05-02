@@ -14,7 +14,11 @@ Partial Class NewOrder
     Public Subtotal As Decimal
 
     Protected Sub Page_Init(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Init
-        If HttpContext.Current.Session("MyTable") Is Nothing Then
+        ' Only seed the default table on a genuine first visit.
+        ' On postbacks (including popup return callbacks) Session("MyTable") may be
+        ' temporarily Nothing due to session timing, but we must NOT overwrite a
+        ' previously loaded order with the blank default table.
+        If HttpContext.Current.Session("MyTable") Is Nothing AndAlso Not IsPostBack Then
             CreateInitialTable()
         End If
 
@@ -123,8 +127,8 @@ Partial Class NewOrder
     End Sub
 
     Sub LoadFromObject()
-        Dim dt As DataTable =
-        CType(HttpContext.Current.Session("MyTable"), DataTable)
+        Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+        If dt Is Nothing Then Exit Sub  ' Session expired or not yet initialised — nothing to bind.
 
         ' The header lists contain one entry per DYNAMIC ITEM column only.
         ' Fixed columns (MemberID=0, MemberName=1, Deposit=2, Debt=3, Profit=4)
@@ -897,30 +901,7 @@ Partial Class NewOrder
         Label2.Text = DR.Item("Key")
         TextBox1.Text = DR.Item("Title")
 
-        Dim SQL As String =
-            "SELECT Items.ItemID AS ID, Items.Description AS Title, VendorItems.Price AS Price, '0.0' AS Profit " &
-            "FROM Items INNER JOIN VendorItems ON VendorItems.ItemID = Items.ItemID " &
-            "WHERE VenderID = " & Label2.Text
-
-
-        Dim ListProperties As New clsListProperties
-        With ListProperties
-            .SQL = SQL
-            .FormTitle = "Select Items"
-            .ColumnHideAndShow = "YNNN"
-            .EditableColumns = "NNYY"
-            .ColumnsWidth = New Double() {1.0, 2.5, 1.0, 1.0}
-        End With
-
-        Dim SelectItemsParameters As String = encryNdecry.EncryptObject(Of clsListProperties)(ListProperties)
-        VendorPopupHelper.RegisterVendorPopup(Me,
-                                      lnkBttnAddItems,
-                                      "AddMultipleItemsFromList.aspx?Parameters=" & SelectItemsParameters,
-                                      600,
-                                      400,
-                                      PopupPlacement.Center,
-                                      "Select Adj",
-                                      VendorPopupHelper.PopupDisplayMode.FrameOnly)
+        RegisterAddItemsPopup()
 
     End Sub
 
@@ -1948,6 +1929,44 @@ Partial Class NewOrder
         ' recalculates the grand total from live session data and is the
         ' sole authority for those controls, so restoring a potentially
         ' stale cached value would cause the "reverts to old value" bug.
+
+        ' Re-register the Add Items popup now that Label2.Text is set.
+        If Not String.IsNullOrEmpty(Label2.Text) Then
+            RegisterAddItemsPopup()
+        End If
+    End Sub
+
+    ' -----------------------------------------------------------------------
+    ' RegisterAddItemsPopup
+    ' Builds and registers the lnkBttnAddItems vendor-items popup using the
+    ' currently-set Label2.Text (VenderID).  Called from both LinkButton3_Click
+    ' (vendor selected interactively) and RestoreHeaderControlsFromSession
+    ' (vendor restored after btnLoad) so the logic lives in one place.
+    ' -----------------------------------------------------------------------
+    Private Sub RegisterAddItemsPopup()
+        Dim SQL As String =
+            "SELECT Items.ItemID AS ID, Items.Description AS Title, VendorItems.Price AS Price, '0.0' AS Profit " &
+            "FROM Items INNER JOIN VendorItems ON VendorItems.ItemID = Items.ItemID " &
+            "WHERE VenderID = " & Label2.Text
+
+        Dim ListProperties As New clsListProperties
+        With ListProperties
+            .SQL = SQL
+            .FormTitle = "Select Items"
+            .ColumnHideAndShow = "YNNN"
+            .EditableColumns = "NNYY"
+            .ColumnsWidth = New Double() {1.0, 2.5, 1.0, 1.0}
+        End With
+
+        Dim SelectItemsParameters As String = encryNdecry.EncryptObject(Of clsListProperties)(ListProperties)
+        VendorPopupHelper.RegisterVendorPopup(Me,
+                                      lnkBttnAddItems,
+                                      "AddMultipleItemsFromList.aspx?Parameters=" & SelectItemsParameters,
+                                      600,
+                                      400,
+                                      PopupPlacement.Center,
+                                      "Select Adj",
+                                      VendorPopupHelper.PopupDisplayMode.FrameOnly)
     End Sub
 
     ' -----------------------------------------------------------------------
