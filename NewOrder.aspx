@@ -268,8 +268,10 @@
                 }
 
                 if (value != 0) {
+                    // data-headercol is now the 0-based list index = data-columnindex - 4
+                    var headerListIndex = colIndex - 4;
                     var cellWrapper2 = document.querySelector(
-                        ".cell-wrapper[data-headercol='" + colIndex + "'][data-headerlevel='1']"
+                        ".cell-wrapper[data-headercol='" + headerListIndex + "'][data-headerlevel='1']"
                     );
                     var value2;
                     var span2 = cellWrapper2.querySelector("span");
@@ -340,18 +342,20 @@
         function saveHeader(textbox) {
 
             var wrapper = textbox.closest(".cell-wrapper");
-            var colIndex = wrapper.getAttribute("data-columnindex");
             var lbl = textbox.previousElementSibling;
 
             lbl.innerText = textbox.value;
             textbox.style.display = "none";
             lbl.style.display = "inline";
 
-            var colIndex = wrapper.getAttribute("data-headercol");
+            // data-columnindex: GridView column index — used for DOM cell lookups.
+            var gridColIndex = wrapper.getAttribute("data-columnindex");
+            // data-headercol: 0-based list index — used for SaveHeader server call.
+            var listColIndex = wrapper.getAttribute("data-headercol");
             var level = wrapper.getAttribute("data-headerlevel");
 
-            // calculateColumn is a pure DOM operation — run immediately.
-            calculateColumn(colIndex);
+            // calculateColumn works on DOM cells identified by data-columnindex.
+            calculateColumn(gridColIndex);
 
             if (level == 1) {
                 iterateThroughAllCells();
@@ -360,7 +364,7 @@
             // SaveHeader must complete first so the session has the new value
             // before RecalculateSubtotal reads it.
             PageMethods.SaveHeader(
-                parseInt(colIndex),
+                parseInt(listColIndex),
                 parseInt(level),
                 textbox.value,
                 function () {
@@ -655,11 +659,7 @@
 
                                         <br />
                                         <br />
-        <span class="labelCol">
-            <asp:LinkButton ID="LinkButton6" runat="server" Font-Names="Arial" >
-                Vender
-            </asp:LinkButton>
-        </span>
+                                        <asp:Label ID="Label11" runat="server" Text="Label"></asp:Label>
 
                                     </td>
                                     <td style="width: 60%;align-items:flex-start" >
@@ -669,6 +669,8 @@
         <asp:Button ID="btnLoad" runat="server" Text="Load" CssClass="btn-action" OnClick="btnLoad_Click" />
         <asp:Button ID="btnSave" runat="server" Text="Save" CssClass="btn-action" OnClick="btnSave_Click"
                     OnClientClick="setTimeout(function(){ var b=document.getElementById('btnSave'); if(b){b.disabled=true; b.value='Saving...';} }, 0); return true;" />
+       <asp:Button ID="btnDelete" runat="server" Text="Delete" CssClass="btn-action" OnClick="btnDelete_Click" />
+
     </div>
 
     <div class="row">

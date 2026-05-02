@@ -126,14 +126,19 @@ Partial Class NewOrder
         Dim dt As DataTable =
         CType(HttpContext.Current.Session("MyTable"), DataTable)
 
-        Dim visibleColumnCount As Integer = Math.Max(dt.Columns.Count - 1, 0)
+        ' The header lists contain one entry per DYNAMIC ITEM column only.
+        ' Fixed columns (MemberID=0, MemberName=1, Deposit=2, Debt=3, Profit=4)
+        ' are handled by hardcoded cells in GridView1_RowCreated and must NOT
+        ' be counted here. GridView1_RowCreated reads HeaderLevel*(i - 5) for
+        ' i >= 5, so list index 0 must align with the first item column.
+        Dim itemColumnCount As Integer = Math.Max(dt.Columns.Count - 5, 0)
 
-        HeaderLevel1 = EnsureHeaderList("HeaderLevel1", "Profit", visibleColumnCount)
-        HeaderLevel2 = EnsureHeaderList("HeaderLevel2", "Total", visibleColumnCount)
-        HeaderLevel3 = EnsureHeaderList("HeaderLevel3", "NoOfItems", visibleColumnCount)
-        HeaderLevel4 = EnsureHeaderList("HeaderLevel4", "Item", visibleColumnCount)
-        HeaderLevel5 = EnsureHeaderList("HeaderLevel5", "Price", visibleColumnCount)
-        HeaderItemIds = EnsureHeaderList("HeaderItemIds", "", visibleColumnCount)
+        HeaderLevel1 = EnsureHeaderList("HeaderLevel1", "Profit", itemColumnCount)
+        HeaderLevel2 = EnsureHeaderList("HeaderLevel2", "Total", itemColumnCount)
+        HeaderLevel3 = EnsureHeaderList("HeaderLevel3", "NoOfItems", itemColumnCount)
+        HeaderLevel4 = EnsureHeaderList("HeaderLevel4", "Item", itemColumnCount)
+        HeaderLevel5 = EnsureHeaderList("HeaderLevel5", "Price", itemColumnCount)
+        HeaderItemIds = EnsureHeaderList("HeaderItemIds", "", itemColumnCount)
 
         BuildGrid(dt)
     End Sub
@@ -196,7 +201,7 @@ Partial Class NewOrder
 
         ' Dynamic item columns start at data index 5 (0=ID, 1=MemberName, 2=Deposit, 3=Debt, 4=Profit)
         For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
-            Dim headerIndex As Integer = dataColumnIndex - 1   ' header lists are 0-based from column 1
+            Dim headerIndex As Integer = dataColumnIndex - 5   ' header lists are item-only, 0-based
 
             If headerIndex >= level1.Count OrElse headerIndex >= level5.Count Then Continue For
 
@@ -241,7 +246,7 @@ Partial Class NewOrder
         Dim subtotal As Decimal = 0D
 
         For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
-            Dim headerIndex As Integer = dataColumnIndex - 1
+            Dim headerIndex As Integer = dataColumnIndex - 5  ' header lists are item-only, 0-based
 
             If headerIndex >= level1.Count OrElse headerIndex >= level5.Count Then Continue For
 
@@ -547,9 +552,12 @@ Partial Class NewOrder
         Dim wrapper As New HtmlGenericControl("div")
         wrapper.Attributes("class") = "cell-wrapper"
         wrapper.Attributes("onclick") = "editCell(this)"
+        ' data-columnindex is the GridView column index (used by JS for DOM operations).
         wrapper.Attributes("data-columnindex") = colIndex.ToString()
         wrapper.Attributes("data-level") = level.ToString()
-        wrapper.Attributes("data-headercol") = colIndex.ToString()
+        ' data-headercol is the 0-based header LIST index (colIndex - 4), used by
+        ' saveHeader() → PageMethods.SaveHeader so it maps correctly into the session list.
+        wrapper.Attributes("data-headercol") = (colIndex - 4).ToString()
         wrapper.Attributes("data-headerlevel") = level.ToString()
         wrapper.Style("width") = "100%"
         wrapper.Style("text-align") = "center"
@@ -621,16 +629,21 @@ Partial Class NewOrder
     End Function
 
     Private Sub RemoveDynamicColumn(headerColumnIndex As Integer)
+        ' headerColumnIndex is the GridView column index (i - 1), where i >= 5 for item columns.
+        ' Minimum valid GridView column index for an item column is 4 (i=5, i-1=4).
         If headerColumnIndex < 4 Then Exit Sub
 
         Dim dt As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
         If dt Is Nothing Then Exit Sub
 
+        ' DataTable column index = GridView column index + 1 (because MemberID col is hidden).
         Dim dataColumnIndex As Integer = headerColumnIndex + 1
-        If dataColumnIndex < 0 OrElse dataColumnIndex >= dt.Columns.Count Then Exit Sub
-        If dataColumnIndex <= 4 Then Exit Sub
+        If dataColumnIndex < 5 OrElse dataColumnIndex >= dt.Columns.Count Then Exit Sub
 
         dt.Columns.RemoveAt(dataColumnIndex)
+
+        ' Header list index = GridView column index - 4 (lists are item-only, 0-based).
+        Dim listIndex As Integer = headerColumnIndex - 4
 
         Dim level1 = HeaderLevel1
         Dim level2 = HeaderLevel2
@@ -639,12 +652,12 @@ Partial Class NewOrder
         Dim level5 = HeaderLevel5
         Dim itemIds = HeaderItemIds
 
-        RemoveHeaderValue(level1, headerColumnIndex)
-        RemoveHeaderValue(level2, headerColumnIndex)
-        RemoveHeaderValue(level3, headerColumnIndex)
-        RemoveHeaderValue(level4, headerColumnIndex)
-        RemoveHeaderValue(level5, headerColumnIndex)
-        RemoveHeaderValue(itemIds, headerColumnIndex)
+        RemoveHeaderValue(level1, listIndex)
+        RemoveHeaderValue(level2, listIndex)
+        RemoveHeaderValue(level3, listIndex)
+        RemoveHeaderValue(level4, listIndex)
+        RemoveHeaderValue(level5, listIndex)
+        RemoveHeaderValue(itemIds, listIndex)
 
         HeaderLevel1 = level1
         HeaderLevel2 = level2
@@ -820,7 +833,7 @@ Partial Class NewOrder
         Dim level5 = HeaderLevel5
 
         For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
-            Dim headerIndex As Integer = dataColumnIndex - 1
+            Dim headerIndex As Integer = dataColumnIndex - 5  ' header lists are item-only, 0-based
             If headerIndex < 0 OrElse headerIndex >= level2.Count OrElse headerIndex >= level3.Count Then
                 Continue For
             End If
@@ -854,7 +867,7 @@ Partial Class NewOrder
             Dim totalProfit As Decimal = 0D
 
             For dataColumnIndex As Integer = 5 To dt.Columns.Count - 1
-                Dim headerIndex As Integer = dataColumnIndex - 1
+                Dim headerIndex As Integer = dataColumnIndex - 5  ' header lists are item-only, 0-based
                 If headerIndex < 0 OrElse headerIndex >= level1.Count Then
                     Continue For
                 End If
@@ -1282,9 +1295,48 @@ Partial Class NewOrder
         ViewState("OrderAlreadySaved") = True
 
         Try
-            Dim newOrderID As Integer = SaveOrder()
-            ClientScript.RegisterStartupScript(Me.GetType(), "saveOK",
-                "alert('Order saved successfully (ID: " & newOrderID & ").');", True)
+            If Label11.Text.Trim().ToLower() = "update" Then
+                ' ── UPDATE MODE ─────────────────────────────────────────────
+                Dim orderID As Integer = 0
+                If Not Integer.TryParse(TextBox4.Text.Trim(), orderID) OrElse orderID = 0 Then
+                    Throw New Exception("No valid Order ID found to update.")
+                End If
+                UpdateOrder(orderID)
+
+                ' Recalculate grand total from fresh session data and push it
+                ' to every display surface so nothing reverts to the old loaded value.
+                Dim updatedSubtotal As Decimal = CalculateSubtotal()
+                Dim updatedNetAdj As Decimal = 0D
+                Dim adjDt As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+                If adjDt Is Nothing Then adjDt = TryCast(ViewState("AddRdcTable"), DataTable)
+                If adjDt IsNot Nothing Then
+                    For Each adjRow As DataRow In adjDt.Rows
+                        updatedNetAdj += ParseDecimalValue(adjRow("NetValue"))
+                    Next
+                End If
+                Dim updatedGrandTotal As String = (updatedSubtotal + updatedNetAdj).ToString("0.000")
+
+                ' Overwrite all grand-total display controls with the recalculated value.
+                Label8.Text = updatedGrandTotal
+                litGrandTotal.Text = updatedGrandTotal
+
+                ' Keep Session in sync so RestoreHeaderControlsFromSession won't
+                ' overwrite Label8 with the stale old value on the next non-postback load.
+                HttpContext.Current.Session("LoadedGrandTotal") = updatedGrandTotal
+
+                ClientScript.RegisterStartupScript(Me.GetType(), "saveOK",
+                    "alert('Order updated successfully (ID: " & orderID & ").');", True)
+            Else
+                ' ── INSERT MODE ─────────────────────────────────────────────
+                Dim newOrderID As Integer = SaveOrder()
+                TextBox4.Text = newOrderID.ToString()
+                ' After a successful save, switch to update mode so subsequent
+                ' clicks on the same page update rather than duplicate the order.
+                Label11.Text = "update"
+                btnSave.Text = "Update"
+                ClientScript.RegisterStartupScript(Me.GetType(), "saveOK",
+                    "alert('Order saved successfully (ID: " & newOrderID & ").');", True)
+            End If
         Catch ex As Exception
             ViewState("OrderAlreadySaved") = Nothing   ' allow retry on failure
             ClientScript.RegisterStartupScript(Me.GetType(), "saveErr",
@@ -1335,29 +1387,24 @@ Partial Class NewOrder
                                          Date.Now.ToString("HH:mm"),
                                          Date.Parse(TextBox3.Text.Trim()).ToString("HH:mm"))
 
-            Dim orderNumber As Object = DBNull.Value
-            Dim num As Integer
-            If Integer.TryParse(TextBox4.Text, num) Then orderNumber = num
-
             Dim grandTotal As Decimal = ParseDecimalValue(Label8.Text)
             Dim totalIn As Decimal = ParseDecimalValue(Label10.Text)
             Dim subtotal As Decimal = ParseDecimalValue(litSubtotal.Text)
 
             ' -- 1. INSERT Orders ---------------------------------------------
             Dim sqlOrder As String =
-                "INSERT INTO Orders (VenderID,OrderDate,OrderTime,OrderNumber," &
+                "INSERT INTO Orders (VenderID,OrderDate,OrderTime," &
                 "Subtotal,GrandTotal,TotalIn,Status,CreatedAt,UpdatedAt) " &
-                "VALUES (@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,Now(),Now())"
+                "VALUES (@p1,@p2,@p3,@p4,@p5,@p6,@p7,Now(),Now())"
 
             Dim cmdOrder As New OleDb.OleDbCommand(sqlOrder, conn, trans)
             cmdOrder.Parameters.AddWithValue("@p1", If(venderID = 0, DBNull.Value, CObj(venderID)))
             cmdOrder.Parameters.AddWithValue("@p2", orderDate)
             cmdOrder.Parameters.AddWithValue("@p3", orderTime)
-            cmdOrder.Parameters.AddWithValue("@p4", orderNumber)
-            cmdOrder.Parameters.AddWithValue("@p5", subtotal)
-            cmdOrder.Parameters.AddWithValue("@p6", grandTotal)
-            cmdOrder.Parameters.AddWithValue("@p7", totalIn)
-            cmdOrder.Parameters.AddWithValue("@p8", "Saved")
+            cmdOrder.Parameters.AddWithValue("@p4", subtotal)
+            cmdOrder.Parameters.AddWithValue("@p5", grandTotal)
+            cmdOrder.Parameters.AddWithValue("@p6", totalIn)
+            cmdOrder.Parameters.AddWithValue("@p7", "Saved")
             cmdOrder.ExecuteNonQuery()
 
             Dim orderID As Integer = Convert.ToInt32(
@@ -1379,10 +1426,9 @@ Partial Class NewOrder
                 For ci As Integer = 0 To itemColNames.Count - 1
                     Dim colName As String = itemColNames(ci)
 
-                    ' Header lists are 0-based from column 1 (MemberName).
-                    ' Fixed columns before item columns: MemberName(0), Deposit(1), Debt(2), Profit(3).
-                    ' So the first item column sits at header index 4.
-                    Dim hdrIndex As Integer = ci + 4
+                    ' Header lists now contain one entry per item column only (0-based).
+                    ' ci == 0 → first item column → HeaderLevel*(0). No fixed-column offset.
+                    Dim hdrIndex As Integer = ci
 
                     Dim displayName As String = If(hdrIndex < HeaderLevel4.Count, HeaderLevel4(hdrIndex), colName)
                     Dim price As Decimal = ParseDecimalValue(If(hdrIndex < HeaderLevel5.Count, HeaderLevel5(hdrIndex), "0"))
@@ -1519,6 +1565,329 @@ Partial Class NewOrder
     End Function
 
     ' =======================================================================
+    '  DELETE ORDER
+    ' =======================================================================
+
+    Protected Sub btnDelete_Click(sender As Object, e As EventArgs) Handles btnDelete.Click
+        Try
+            Dim orderID As Integer = 0
+            If Not Integer.TryParse(TextBox4.Text.Trim(), orderID) OrElse orderID = 0 Then
+                ClientScript.RegisterStartupScript(Me.GetType(), "delErr",
+                    "alert('Please load a valid Order ID before deleting.');", True)
+                Exit Sub
+            End If
+
+            DeleteOrder(orderID)
+
+            ' Clear page state so the form is blank and ready for a new order.
+            TextBox4.Text = ""
+            TextBox1.Text = ""
+            TextBox2.Text = ""
+            TextBox3.Text = ""
+            Label2.Text = ""
+            Label8.Text = "0.000"
+            litGrandTotal.Text = "0.000"
+            Label10.Text = "0.000"
+            litTotalIn.Text = "0.000"
+            Label11.Text = "Label"
+            btnSave.Text = "Save"
+            hdnSelectedVendorValue.Value = ""
+            hdnSelectedVendorText.Value = ""
+
+            ' Clear session state.
+            HttpContext.Current.Session.Remove("MyTable")
+            HttpContext.Current.Session.Remove("AddRdcTable_WM")
+            HttpContext.Current.Session.Remove("LastSavedOrderID")
+            HttpContext.Current.Session.Remove("LoadedVenderID")
+            HttpContext.Current.Session.Remove("LoadedVenderName")
+            HttpContext.Current.Session.Remove("LoadedGrandTotal")
+            HttpContext.Current.Session.Remove("HeaderLevel1")
+            HttpContext.Current.Session.Remove("HeaderLevel2")
+            HttpContext.Current.Session.Remove("HeaderLevel3")
+            HttpContext.Current.Session.Remove("HeaderLevel4")
+            HttpContext.Current.Session.Remove("HeaderLevel5")
+            HttpContext.Current.Session.Remove("HeaderItemIds")
+            ViewState("AddRdcTable") = Nothing
+
+            ' Rebuild the grid with the default member table.
+            CreateInitialTable()
+            LoadFromObject()
+            BindAddRdcGrid(Nothing)
+            RefreshSubtotal()
+
+            ClientScript.RegisterStartupScript(Me.GetType(), "delOK",
+                "alert('Order " & orderID & " deleted successfully.');", True)
+
+        Catch ex As Exception
+            ClientScript.RegisterStartupScript(Me.GetType(), "delErr",
+                "alert('Delete failed: " & ex.Message.Replace("'", "") & "');", True)
+        End Try
+    End Sub
+
+    ' -----------------------------------------------------------------------
+    ' DeleteOrder
+    ' Removes an order and all its child records inside one transaction.
+    ' Deletion order respects FK constraints:
+    '   OrderMemberItems → OrderMembers → OrderAdjustments → OrderItems → Orders
+    ' -----------------------------------------------------------------------
+    Private Sub DeleteOrder(orderID As Integer)
+        Dim conn As New OleDb.OleDbConnection(InfoDB)
+        conn.Open()
+        Dim trans As OleDb.OleDbTransaction = conn.BeginTransaction()
+
+        Try
+            Dim cmd As OleDb.OleDbCommand
+
+            ' 1. Delete quantities (child of OrderMembers and OrderItems)
+            cmd = New OleDb.OleDbCommand(
+                "DELETE FROM OrderMemberItems WHERE OrderMemberID IN " &
+                "(SELECT OrderMemberID FROM OrderMembers WHERE OrderID = @p1)",
+                conn, trans)
+            cmd.Parameters.AddWithValue("@p1", orderID)
+            cmd.ExecuteNonQuery()
+
+            ' 2. Delete member rows
+            cmd = New OleDb.OleDbCommand(
+                "DELETE FROM OrderMembers WHERE OrderID = @p1", conn, trans)
+            cmd.Parameters.AddWithValue("@p1", orderID)
+            cmd.ExecuteNonQuery()
+
+            ' 3. Delete adjustments
+            cmd = New OleDb.OleDbCommand(
+                "DELETE FROM OrderAdjustments WHERE OrderID = @p1", conn, trans)
+            cmd.Parameters.AddWithValue("@p1", orderID)
+            cmd.ExecuteNonQuery()
+
+            ' 4. Delete items (columns)
+            cmd = New OleDb.OleDbCommand(
+                "DELETE FROM OrderItems WHERE OrderID = @p1", conn, trans)
+            cmd.Parameters.AddWithValue("@p1", orderID)
+            cmd.ExecuteNonQuery()
+
+            ' 5. Delete the order header itself
+            cmd = New OleDb.OleDbCommand(
+                "DELETE FROM Orders WHERE OrderID = @p1", conn, trans)
+            cmd.Parameters.AddWithValue("@p1", orderID)
+            cmd.ExecuteNonQuery()
+
+            trans.Commit()
+            conn.Close()
+
+        Catch ex As Exception
+            trans.Rollback()
+            conn.Close()
+            Throw
+        End Try
+    End Sub
+
+    ' =======================================================================
+    '  UPDATE ORDER
+    ' Deletes all child records for the given OrderID and re-inserts them
+    ' from the current in-session state, then updates the Orders header row.
+    ' Runs inside a single OleDb transaction.
+    ' =======================================================================
+    Private Sub UpdateOrder(orderID As Integer)
+
+        Dim conn As New OleDb.OleDbConnection(InfoDB)
+        conn.Open()
+        Dim trans As OleDb.OleDbTransaction = conn.BeginTransaction()
+
+        Try
+            ' -- Collect header field values -----------------------------------
+            Dim venderID As Integer = 0
+            If Not Integer.TryParse(Label2.Text.Trim(), venderID) OrElse venderID = 0 Then
+                Integer.TryParse(hdnSelectedVendorValue.Value, venderID)
+            End If
+
+            Dim orderDate As String = If(String.IsNullOrWhiteSpace(TextBox2.Text),
+                                         Date.Today.ToString("yyyy-MM-dd"),
+                                         Date.Parse(TextBox2.Text.Trim()).ToString("yyyy-MM-dd"))
+            Dim orderTime As String = If(String.IsNullOrWhiteSpace(TextBox3.Text),
+                                         Date.Now.ToString("HH:mm"),
+                                         Date.Parse(TextBox3.Text.Trim()).ToString("HH:mm"))
+
+            Dim grandTotal As Decimal = ParseDecimalValue(Label8.Text)
+            Dim totalIn As Decimal = ParseDecimalValue(Label10.Text)
+            Dim subtotal As Decimal = ParseDecimalValue(litSubtotal.Text)
+
+            ' -- 1. DELETE child records in dependency order ------------------
+            ' OrderMemberItems → OrderMembers → OrderAdjustments → OrderItems
+
+            Dim cmdDel As OleDb.OleDbCommand
+
+            ' Delete OrderMemberItems for all members of this order
+            cmdDel = New OleDb.OleDbCommand(
+                "DELETE FROM OrderMemberItems WHERE OrderMemberID IN " &
+                "(SELECT OrderMemberID FROM OrderMembers WHERE OrderID = @p1)",
+                conn, trans)
+            cmdDel.Parameters.AddWithValue("@p1", orderID)
+            cmdDel.ExecuteNonQuery()
+
+            ' Delete OrderMembers
+            cmdDel = New OleDb.OleDbCommand(
+                "DELETE FROM OrderMembers WHERE OrderID = @p1", conn, trans)
+            cmdDel.Parameters.AddWithValue("@p1", orderID)
+            cmdDel.ExecuteNonQuery()
+
+            ' Delete OrderAdjustments
+            cmdDel = New OleDb.OleDbCommand(
+                "DELETE FROM OrderAdjustments WHERE OrderID = @p1", conn, trans)
+            cmdDel.Parameters.AddWithValue("@p1", orderID)
+            cmdDel.ExecuteNonQuery()
+
+            ' Delete OrderItems
+            cmdDel = New OleDb.OleDbCommand(
+                "DELETE FROM OrderItems WHERE OrderID = @p1", conn, trans)
+            cmdDel.Parameters.AddWithValue("@p1", orderID)
+            cmdDel.ExecuteNonQuery()
+
+            ' -- 2. UPDATE the Orders header row ------------------------------
+            Dim sqlOrder As String =
+                "UPDATE Orders SET VenderID=@p1, OrderDate=@p2, OrderTime=@p3, " &
+                "Subtotal=@p4, GrandTotal=@p5, TotalIn=@p6, UpdatedAt=Now() " &
+                "WHERE OrderID=@p7"
+            Dim cmdOrder As New OleDb.OleDbCommand(sqlOrder, conn, trans)
+            cmdOrder.Parameters.AddWithValue("@p1", If(venderID = 0, DBNull.Value, CObj(venderID)))
+            cmdOrder.Parameters.AddWithValue("@p2", orderDate)
+            cmdOrder.Parameters.AddWithValue("@p3", orderTime)
+            cmdOrder.Parameters.AddWithValue("@p4", subtotal)
+            cmdOrder.Parameters.AddWithValue("@p5", grandTotal)
+            cmdOrder.Parameters.AddWithValue("@p6", totalIn)
+            cmdOrder.Parameters.AddWithValue("@p7", orderID)
+            cmdOrder.ExecuteNonQuery()
+
+            ' -- 3. Re-INSERT OrderItems (one per dynamic column) -------------
+            Dim myTable As DataTable = TryCast(HttpContext.Current.Session("MyTable"), DataTable)
+            Dim orderItemIDs As New Dictionary(Of String, Integer)
+
+            If myTable IsNot Nothing Then
+                Dim itemColNames As New List(Of String)
+                For ci As Integer = 5 To myTable.Columns.Count - 1
+                    itemColNames.Add(myTable.Columns(ci).ColumnName)
+                Next
+
+                For ci As Integer = 0 To itemColNames.Count - 1
+                    Dim colName As String = itemColNames(ci)
+                    ' Header lists are item-only (0-based). ci == 0 → first item column.
+                    Dim hdrIndex As Integer = ci
+
+                    Dim displayName As String = If(hdrIndex < HeaderLevel4.Count, HeaderLevel4(hdrIndex), colName)
+                    Dim price As Decimal = ParseDecimalValue(If(hdrIndex < HeaderLevel5.Count, HeaderLevel5(hdrIndex), "0"))
+                    Dim profit As Decimal = ParseDecimalValue(If(hdrIndex < HeaderLevel1.Count, HeaderLevel1(hdrIndex), "0"))
+                    Dim noOfItems As Decimal = ParseDecimalValue(If(hdrIndex < HeaderLevel3.Count, HeaderLevel3(hdrIndex), "0"))
+                    Dim total As Decimal = ParseDecimalValue(If(hdrIndex < HeaderLevel2.Count, HeaderLevel2(hdrIndex), "0"))
+                    Dim itemIdStr As String = If(hdrIndex < HeaderItemIds.Count, HeaderItemIds(hdrIndex), "")
+                    Dim itemID As Object = DBNull.Value
+                    Dim parsedItemID As Integer
+                    If Integer.TryParse(itemIdStr, parsedItemID) Then itemID = parsedItemID
+
+                    Dim sqlOI As String =
+                        "INSERT INTO OrderItems " &
+                        "(OrderID,ItemID,DisplayName,Price,Profit,NoOfItems,[Total],SortOrder) " &
+                        "VALUES (@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8)"
+                    Dim cmdOI As New OleDb.OleDbCommand(sqlOI, conn, trans)
+                    cmdOI.Parameters.AddWithValue("@p1", orderID)
+                    cmdOI.Parameters.AddWithValue("@p2", itemID)
+                    cmdOI.Parameters.AddWithValue("@p3", displayName)
+                    cmdOI.Parameters.AddWithValue("@p4", price)
+                    cmdOI.Parameters.AddWithValue("@p5", profit)
+                    cmdOI.Parameters.AddWithValue("@p6", noOfItems)
+                    cmdOI.Parameters.AddWithValue("@p7", total)
+                    cmdOI.Parameters.AddWithValue("@p8", ci)
+                    cmdOI.ExecuteNonQuery()
+
+                    orderItemIDs(colName) = Convert.ToInt32(
+                        New OleDb.OleDbCommand("SELECT @@IDENTITY", conn, trans).ExecuteScalar())
+                Next
+
+                ' -- 4. Re-INSERT OrderMembers + OrderMemberItems -------------
+                Dim sortMember As Integer = 0
+                For Each dr As DataRow In myTable.Rows
+                    Dim memberID As Integer = 0
+                    Integer.TryParse(Convert.ToString(dr("MemberID")), memberID)
+
+                    Dim sqlOM As String =
+                        "INSERT INTO OrderMembers " &
+                        "(OrderID,MemberID,Deposit,Debt,Profit,SortOrder) " &
+                        "VALUES (@p1,@p2,@p3,@p4,@p5,@p6)"
+                    Dim cmdOM As New OleDb.OleDbCommand(sqlOM, conn, trans)
+                    cmdOM.Parameters.AddWithValue("@p1", orderID)
+                    cmdOM.Parameters.AddWithValue("@p2", If(memberID = 0, DBNull.Value, CObj(memberID)))
+                    cmdOM.Parameters.AddWithValue("@p3", ParseDecimalValue(dr("Deposit")))
+                    cmdOM.Parameters.AddWithValue("@p4", ParseDecimalValue(dr("Debt")))
+                    cmdOM.Parameters.AddWithValue("@p5", ParseDecimalValue(dr("Profit")))
+                    cmdOM.Parameters.AddWithValue("@p6", sortMember)
+                    cmdOM.ExecuteNonQuery()
+                    sortMember += 1
+
+                    Dim orderMemberID As Integer = Convert.ToInt32(
+                        New OleDb.OleDbCommand("SELECT @@IDENTITY", conn, trans).ExecuteScalar())
+
+                    For Each colName As String In itemColNames
+                        If Not myTable.Columns.Contains(colName) Then Continue For
+                        Dim qty As Decimal = ParseDecimalValue(dr(colName))
+                        If qty = 0D Then Continue For
+                        Dim oiID As Integer = 0
+                        If Not orderItemIDs.TryGetValue(colName, oiID) Then Continue For
+
+                        Dim sqlOMI As String =
+                            "INSERT INTO OrderMemberItems " &
+                            "(OrderMemberID,OrderItemID,Quantity) " &
+                            "VALUES (@p1,@p2,@p3)"
+                        Dim cmdOMI As New OleDb.OleDbCommand(sqlOMI, conn, trans)
+                        cmdOMI.Parameters.AddWithValue("@p1", orderMemberID)
+                        cmdOMI.Parameters.AddWithValue("@p2", oiID)
+                        cmdOMI.Parameters.AddWithValue("@p3", qty)
+                        cmdOMI.ExecuteNonQuery()
+                    Next
+                Next
+            End If
+
+            ' -- 5. Re-INSERT OrderAdjustments --------------------------------
+            Dim addRdcTable As DataTable = TryCast(HttpContext.Current.Session("AddRdcTable_WM"), DataTable)
+            If addRdcTable Is Nothing Then
+                addRdcTable = TryCast(ViewState("AddRdcTable"), DataTable)
+            End If
+            If addRdcTable IsNot Nothing Then
+                Dim sortAdj As Integer = 0
+                For Each dr As DataRow In addRdcTable.Rows
+                    Dim distrib As Object = DBNull.Value
+                    If dr.Table.Columns.Contains("Distribution") Then
+                        distrib = Convert.ToString(dr("Distribution"))
+                    End If
+
+                    Dim sqlOA As String =
+                        "INSERT INTO OrderAdjustments " &
+                        "(OrderID,AdjustmentName,AdjustmentType,AdjustmentCalc," &
+                        "CalculationAmount,Distribution,NetValue,SortOrder) " &
+                        "VALUES (@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8)"
+                    Dim cmdOA As New OleDb.OleDbCommand(sqlOA, conn, trans)
+                    cmdOA.Parameters.AddWithValue("@p1", orderID)
+                    cmdOA.Parameters.AddWithValue("@p2", Convert.ToString(dr("adjusmentName")))
+                    cmdOA.Parameters.AddWithValue("@p3", Convert.ToString(dr("adjusmentType")))
+                    cmdOA.Parameters.AddWithValue("@p4", Convert.ToString(dr("adjusmentCalculation")))
+                    cmdOA.Parameters.AddWithValue("@p5", ParseDecimalValue(dr("CalculationAmount")))
+                    cmdOA.Parameters.AddWithValue("@p6", distrib)
+                    cmdOA.Parameters.AddWithValue("@p7", ParseDecimalValue(dr("NetValue")))
+                    cmdOA.Parameters.AddWithValue("@p8", sortAdj)
+                    cmdOA.ExecuteNonQuery()
+                    sortAdj += 1
+                Next
+            End If
+
+            ' -- Commit -------------------------------------------------------
+            trans.Commit()
+            conn.Close()
+
+        Catch ex As Exception
+            trans.Rollback()
+            conn.Close()
+            Throw
+        End Try
+
+    End Sub
+
+    ' =======================================================================
     '  LOAD ORDER
     ' =======================================================================
 
@@ -1553,6 +1922,9 @@ Partial Class NewOrder
             Dim netAdj As Decimal = ParseDecimalValue(litGrandTotal.Text) - sub_total
             UpdateBalanceBadge(sub_total + netAdj, totalIn)
 
+            Label11.Text = "update"
+            btnSave.Text = "Update"
+
         Catch ex As Exception
             HttpContext.Current.Session.Remove("PendingLoadOrderID")
             ClientScript.RegisterStartupScript(Me.GetType(), "loadEx",
@@ -1563,7 +1935,6 @@ Partial Class NewOrder
     Private Sub RestoreHeaderControlsFromSession()
         Dim sID As Object = HttpContext.Current.Session("LoadedVenderID")
         Dim sName As Object = HttpContext.Current.Session("LoadedVenderName")
-        Dim sGT As Object = HttpContext.Current.Session("LoadedGrandTotal")
         If sID IsNot Nothing Then
             Label2.Text = Convert.ToString(sID)
             hdnSelectedVendorValue.Value = Convert.ToString(sID)
@@ -1572,10 +1943,11 @@ Partial Class NewOrder
             TextBox1.Text = Convert.ToString(sName)
             hdnSelectedVendorText.Value = Convert.ToString(sName)
         End If
-        If sGT IsNot Nothing Then
-            Label8.Text = Convert.ToString(sGT)
-            litGrandTotal.Text = Convert.ToString(sGT)
-        End If
+        ' NOTE: Label8 / litGrandTotal are intentionally NOT restored from
+        ' Session("LoadedGrandTotal") here.  RefreshSubtotal() always
+        ' recalculates the grand total from live session data and is the
+        ' sole authority for those controls, so restoring a potentially
+        ' stale cached value would cause the "reverts to old value" bug.
     End Sub
 
     ' -----------------------------------------------------------------------
@@ -1592,7 +1964,7 @@ Partial Class NewOrder
 
         ' -- 1. Load the Orders header row --------------------------------
         Dim sqlHdr As String =
-                "SELECT VenderID, OrderDate, OrderTime, OrderNumber, " &
+                "SELECT VenderID, OrderDate, OrderTime, " &
                 "Subtotal, GrandTotal, TotalIn FROM Orders WHERE OrderID = " & orderID
         Dim dtHdr As DataTable = GetDataTable(InfoDB, sqlHdr)
         If dtHdr Is Nothing OrElse dtHdr.Rows.Count = 0 Then
@@ -1636,7 +2008,7 @@ Partial Class NewOrder
         Dim _otRaw As String = Convert.ToString(hdrRow("OrderTime"))
         TextBox3.Text = If(Date.TryParse(_otRaw, _ot), _ot.ToString("HH:mm"), _otRaw)
 
-        TextBox4.Text = Convert.ToString(hdrRow("OrderNumber"))
+        TextBox4.Text = orderID.ToString()
 
         HttpContext.Current.Session("LoadedVenderID") = _vid
         HttpContext.Current.Session("LoadedVenderName") = _vname
@@ -1718,9 +2090,9 @@ Partial Class NewOrder
                 Dim dr As DataRow = myTable.NewRow()
                 dr("MemberID") = Convert.ToString(memRow("MemberID"))
                 dr("MemberName") = Convert.ToString(memRow("MemberName"))
-                dr("Deposit") = Convert.ToString(memRow("Deposit"))
-                dr("Debt") = Convert.ToString(memRow("Debt"))
-                dr("Profit") = Convert.ToString(memRow("Profit"))
+                dr("Deposit") = ParseDecimalValue(memRow("Deposit")).ToString("0.000")
+                dr("Debt") = ParseDecimalValue(memRow("Debt")).ToString("0.000")
+                dr("Profit") = ParseDecimalValue(memRow("Profit")).ToString("0.000")
 
                 Dim omID As Integer = Convert.ToInt32(memRow("OrderMemberID"))
 
@@ -1770,8 +2142,11 @@ Partial Class NewOrder
                 nr("__RowGuid") = Guid.NewGuid().ToString("N")
                 adjTable.Rows.Add(nr)
             Next
+            adjTable.AcceptChanges()
+            HttpContext.Current.Session("AddRdcTable_WM") = adjTable
             BindAddRdcGrid(adjTable)
         Else
+            HttpContext.Current.Session("AddRdcTable_WM") = Nothing
             BindAddRdcGrid(Nothing)
         End If
 

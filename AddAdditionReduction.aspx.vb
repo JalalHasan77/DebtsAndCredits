@@ -24,14 +24,14 @@ Partial Class AddAdditionReduction
         returnTable.Columns.Add("adjusmentType", GetType(String))
         returnTable.Columns.Add("adjusmentCalculation", GetType(String))
         returnTable.Columns.Add("CalculationAmount", GetType(String))
-        returnTable.Columns.Add("Distrbution", GetType(String))
+        returnTable.Columns.Add("Distribution", GetType(String))
 
         Dim returnValue As DataRow = returnTable.NewRow()
         returnValue("adjusmentName") = adjusmentName
         returnValue("adjusmentType") = adjusmentType
         returnValue("adjusmentCalculation") = adjusmentCalculation
         returnValue("CalculationAmount") = CalculationAmount
-        returnValue("Distrbution") = Distrbution
+        returnValue("Distribution") = Distrbution
         returnTable.Rows.Add(returnValue)
 
         VendorPopupHelper.RegisterPopupSelectionAndClose(
